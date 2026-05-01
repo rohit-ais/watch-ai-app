@@ -232,7 +232,7 @@ export default function GroupRoom({ params }) {
       await loadParticipants();
 
     } catch (err) {
-      console.error("JOIN ERROR:", JSON.stringify(err));
+      console.error(err);
       setJoinError("Could not join. Please try again.");
     }
     setJoining(false);
