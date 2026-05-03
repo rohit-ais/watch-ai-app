@@ -384,9 +384,9 @@ export default function Home() {
       minHeight: "100vh",
       background: "#080808",
       display: "flex",
-      alignItems: "center",
+      alignItems: "flex-start",
       justifyContent: "center",
-      padding: "24px 16px",
+      padding: "48px 16px 24px",
       fontFamily: "'DM Sans', system-ui, sans-serif",
     }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Serif+Display&display=swap" rel="stylesheet" />
@@ -493,8 +493,8 @@ export default function Home() {
               </div>
             </div>
             <div>
-              <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>Platform</p>
-              <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "2px" }}>
+              <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>Platform <span style={{ color: "#222", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>→ scroll</span></p>
+              <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px", paddingTop: "2px", scrollbarWidth: "none", msOverflowStyle: "none" }}>
                 {PLATFORMS.map((p) => (
                   <button key={p} onClick={() => setPlatform(platform === p ? "" : p)} style={{ ...S.pill(platform === p), flexShrink: 0 }}>{p}</button>
                 ))}
@@ -545,7 +545,7 @@ export default function Home() {
 
             <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
               {results[0].poster && (
-                <img src={results[0].poster} alt={results[0].name} style={{ width: "52px", height: "74px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }} />
+                <img src={results[0].poster} alt={results[0].name} style={{ width: "46px", height: "66px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }} />
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: "15px", fontWeight: 500, color: "#fff", margin: "0 0 2px", lineHeight: 1.3 }}>{results[0].name}</p>
