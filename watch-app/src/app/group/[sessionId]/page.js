@@ -370,6 +370,16 @@ export default function GroupRoom({ params }) {
       .eq("id", sessionId);
 
     setResults(top3);
+    try {
+      await supabase.from("events").insert({
+        mode: "group",
+        filters: { mood: mergedMood, time: mergedTime, type: mergedType, platform: mergedPlatform },
+        top_pick: top3[0]?.name || null,
+        match_label: matchLabel(top3[0]?.score, maxPossible),
+        was_fallback: top3[0]?.score === 0,
+        session_id: sessionId,
+      });
+    } catch { /* silent */ }
     setDeciding(false);
   };
 

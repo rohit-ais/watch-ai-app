@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import { supabase } from "../lib/supabase";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -310,6 +311,7 @@ export default function Home() {
       const newSeen = [...seen, ...top3.map((i) => i.name)];
       localStorage.setItem("seen", JSON.stringify(newSeen));
       setResults(top3);
+      logEvent(top3, maxPossible);
 
       // Cache enriched values back into contentList
       setContentList((prev) => prev.map((item) => {
@@ -343,6 +345,21 @@ export default function Home() {
     setWasReset(false);
     inputRef.current?.focus();
   };
+
+  const logEvent = async (results, maxPossible) => {
+    try {
+      await supabase.from("events").insert({
+        mode: "solo",
+        filters: { mood, time, type, platform, vibe: vibe.trim() },
+        top_pick: results[0]?.name || null,
+        match_label: matchLabel(results[0]?.score, maxPossible),
+        was_fallback: results[0]?.score === 0,
+        session_id: null,
+      });
+    } catch { /* silent — never block user */ }
+  };
+
+
 
   // ─── Styles ────────────────────────────────────────────────────────────────
 
