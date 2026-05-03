@@ -61,6 +61,13 @@ function normalizePlatform(name) {
   return "Other";
 }
 
+function formatVotes(count) {
+  if (!count) return null;
+  if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
+  if (count >= 1000) return `${Math.round(count / 1000)}K`;
+  return count.toString();
+}
+
 function matchLabel(score, max) {
   const pct = max ? Math.round((score / max) * 100) : 0;
   if (pct === 100) return "⚡ Perfect Match";
@@ -206,6 +213,7 @@ export default function Home() {
       poster: item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : null,
       popularity: item.popularity || 0,
       rating: item.vote_average || 0,
+      voteCount: item.vote_count || 0,
       type: item.title ? "Movie" : "Series",
       genres: item.genre_ids || [],
       mood: [...new Set((item.genre_ids || []).map((id) => GENRE_TO_MOOD[id]).filter(Boolean))],
@@ -528,6 +536,11 @@ export default function Home() {
                 <span style={{ fontSize: "10px", background: "#1a1a1a", border: "1px solid #222", borderRadius: "20px", padding: "2px 8px", color: "#aaa" }}>
                   {matchLabel(results[0].score, results[0].maxPossible)}
                 </span>
+                {results[0].rating > 0 && (
+                  <p style={{ fontSize: "10px", color: "#555", margin: "5px 0 0" }}>
+                    ⭐ {results[0].rating.toFixed(1)}{results[0].voteCount > 0 ? ` • ${formatVotes(results[0].voteCount)} votes` : ""}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -543,6 +556,11 @@ export default function Home() {
                       <div>
                         <p style={{ fontSize: "13px", color: "#888", margin: 0, lineHeight: 1.3 }}>{item.name}</p>
                         <p style={{ fontSize: "10px", color: "#333", margin: 0 }}>{item.type}</p>
+                        {item.rating > 0 && (
+                          <p style={{ fontSize: "9px", color: "#444", margin: 0 }}>
+                            ⭐ {item.rating.toFixed(1)}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))}
