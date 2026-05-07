@@ -1,21 +1,15 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { supabase } from "../lib/supabase";
+import { entertainmentConfig, GENRES, MOODS, TYPES, PLATFORMS, DOMAIN } from "../lib/domains/entertainment/config";
+import { parseVibe, getParsedChips } from "../lib/domains/entertainment/parser";
+import { enrichItems, transformTMDbItem } from "../lib/domains/entertainment/enricher";
+import { runSoloEngine } from "../lib/engine/core";
+import { createSeenTracker, setLastPickTime, isImplicitRejection } from "../lib/engine/seen";
+import { logPick, logRejection } from "../lib/engine/logger";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const MOOD_KEYWORDS = {
-  Chill: ["tired", "chill", "relax", "calm", "lazy", "easy", "slow", "cozy", "peaceful", "quiet"],
-  Fun: ["funny", "fun", "laugh", "comedy", "happy", "cheerful", "hilarious", "humor"],
-  Intense: ["action", "intense", "thriller", "exciting", "edge", "suspense", "drama", "dark", "serious"],
-  Light: ["light", "simple", "feel good", "heartwarming", "family", "sweet", "gentle", "soft", "cartoon", "kid"],
-};
-
-const TIME_KEYWORDS = {
-  "20-30": ["short", "quick", "episode", "20", "30", "brief", "30 min"],
-  "1hr": ["hour", "1hr", "medium", "60"],
-  "2hr+": ["movie", "long", "2hr", "feature", "full", "binge"],
-};
+const TIMES = [["20-30", "20-30m"], ["1hr", "1 Hr"], ["2hr+", "2+ Hr"]];
 
 const EXAMPLES = [
   "Date night movie...",
@@ -26,41 +20,7 @@ const EXAMPLES = [
   "Chill Sunday watch...",
 ];
 
-const GENRE_TO_MOOD = {
-  28: "Intense", 12: "Fun", 16: "Light", 35: "Fun",
-  18: "Intense", 27: "Intense", 10749: "Chill",
-  878: "Intense", 10751: "Light", 99: "Chill",
-};
-
-const PLATFORMS = ["Netflix", "Prime", "Disney+", "JioCinema", "Any"];
-const MOODS = ["Chill", "Fun", "Intense", "Light"];
-const TIMES = [["20-30", "20-30m"], ["1hr", "1 Hr"], ["2hr+", "2+ Hr"]];
-const TYPES = ["Movie", "Series"];
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function parseVibe(text) {
-  const lower = text.toLowerCase();
-  let mood = "";
-  let time = "";
-  for (const [m, keywords] of Object.entries(MOOD_KEYWORDS)) {
-    if (keywords.some((k) => lower.includes(k))) { mood = m; break; }
-  }
-  for (const [t, keywords] of Object.entries(TIME_KEYWORDS)) {
-    if (keywords.some((k) => lower.includes(k))) { time = t; break; }
-  }
-  return { mood, time };
-}
-
-function normalizePlatform(name) {
-  if (!name) return "Other";
-  const n = name.toLowerCase();
-  if (n.includes("netflix")) return "Netflix";
-  if (n.includes("amazon") || n.includes("prime")) return "Prime";
-  if (n.includes("disney")) return "Disney+";
-  if (n.includes("jio")) return "JioCinema";
-  return "Other";
-}
 
 function formatVotes(count) {
   if (!count) return null;
@@ -69,29 +29,23 @@ function formatVotes(count) {
   return count.toString();
 }
 
-function matchLabel(score, max) {
-  const pct = max ? Math.round((score / max) * 100) : 0;
-  if (pct === 100) return "⚡ Perfect Match";
-  if (pct >= 75) return "👍 Strong Match";
-  if (pct >= 50) return "🙂 Good Match";
-  if (pct > 0) return "🎲 Best Available";
-  return "🎬 Recommended for you";
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Home() {
   // Vibe / conversational
   const [vibe, setVibe] = useState("");
-  const [parsed, setParsed] = useState({ mood: "", time: "" });
+  const [parsed, setParsed] = useState({ mood: "", genre: null, time: "" });
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const inputRef = useRef(null);
 
-  // Filters
-  const [type, setType] = useState("");
-  const [time, setTime] = useState("");
+  // Intent filters — mood/genre/time (cleared when vibe mode switches to filter mode)
   const [mood, setMood] = useState("");
+  const [genre, setGenre] = useState(null);
+  const [time, setTime] = useState("");
+
+  // Structural filters — type/platform (never cleared automatically)
+  const [type, setType] = useState("");
   const [platform, setPlatform] = useState("");
 
   // Engine
@@ -105,11 +59,17 @@ export default function Home() {
   const [explore, setExplore] = useState([]);
   const [wasReset, setWasReset] = useState(false);
 
+  // Seen tracker — stable ref, scoped to entertainment solo
+  const seenTrackerRef = useRef(null);
+  if (!seenTrackerRef.current) {
+    seenTrackerRef.current = createSeenTracker(`${DOMAIN}-solo`);
+  }
+  const seenTracker = seenTrackerRef.current;
+
   // ─── Init ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     inputRef.current?.focus();
-    localStorage.removeItem("seen");
     fetchMovies();
   }, []);
 
@@ -121,53 +81,70 @@ export default function Home() {
   }, []);
 
   // ─── Vibe input ────────────────────────────────────────────────────────────
+  // RULE: Typing in bar clears intent filters (mood, genre, time)
+  // and sets them from vibe parsing.
+  // Type and platform are structural — never touched by vibe.
 
   const handleVibeChange = (e) => {
     const val = e.target.value;
     setVibe(val);
+
     if (val.length > 2) {
       const p = parseVibe(val);
       setParsed(p);
-      if (p.mood) setMood(p.mood);
-      if (p.time) setTime(p.time);
+      // Vibe takes over intent filters completely
+      setMood(p.mood || "");
+      setGenre(p.genre || null);
+      setTime(p.time || "");
     } else {
-      setParsed({ mood: "", time: "" });
+      // Short text — clear intent filters set by vibe
+      setParsed({ mood: "", genre: null, time: "" });
+      setMood("");
+      setGenre(null);
+      setTime("");
     }
   };
 
   const clearVibe = () => {
     setVibe("");
-    setParsed({ mood: "", time: "" });
+    setParsed({ mood: "", genre: null, time: "" });
+    // Clear intent filters — user is now in filter mode
+    setMood("");
+    setGenre(null);
+    setTime("");
     inputRef.current?.focus();
   };
 
-  const isActive = vibe.trim() || type || mood || time || platform;
+  // ─── Filter pill handlers ──────────────────────────────────────────────────
+  // RULE: Clicking a pill clears vibe text and takes over.
+  // Genre and mood never coexist — selecting one clears the other.
 
-  // ─── TMDb helpers (outside fetchMovies so handlePick can access) ───────────
-
-  const getProviders = async (id, mediaType, apiKey) => {
-    try {
-      const res = await fetch(`https://api.themoviedb.org/3/${mediaType}/${id}/watch/providers?api_key=${apiKey}`);
-      const data = await res.json();
-      const providers = data.results?.IN?.flatrate;
-      if (!providers?.length) return "Other";
-      return normalizePlatform(providers[0].provider_name);
-    } catch { return "Other"; }
+  const handleMoodSelect = (m) => {
+    // Clear vibe — switching to filter mode
+    setVibe("");
+    setParsed({ mood: "", genre: null, time: "" });
+    // Mood clears genre
+    setGenre(null);
+    setMood(mood === m ? "" : m);
   };
 
-  const getRuntime = async (id, mediaType, apiKey) => {
-    try {
-      const res = await fetch(`https://api.themoviedb.org/3/${mediaType}/${id}?api_key=${apiKey}`);
-      const data = await res.json();
-      const mins = mediaType === "movie"
-        ? data.runtime
-        : data.episode_run_time?.[0] || data.last_episode_to_air?.runtime || null;
-      if (!mins) return "2hr+";
-      if (mins <= 35) return "20-30";
-      if (mins <= 75) return "1hr";
-      return "2hr+";
-    } catch { return "2hr+"; }
+  const handleGenreSelect = (g) => {
+    // Clear vibe — switching to filter mode
+    setVibe("");
+    setParsed({ mood: "", genre: null, time: "" });
+    // Genre clears mood
+    setMood("");
+    setGenre(genre === g ? null : g);
   };
+
+  const handleTimeSelect = (t) => {
+    // Clear vibe time — switching to filter mode
+    setVibe("");
+    setParsed({ mood: "", genre: null, time: "" });
+    setTime(time === t ? "" : t);
+  };
+
+  const isActive = vibe.trim() || type || mood || genre || time || platform;
 
   // ─── TMDb fetch ────────────────────────────────────────────────────────────
 
@@ -183,7 +160,10 @@ export default function Home() {
         fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${apiKey}&page=2`),
       ]);
       const [d1, d2, d3, d4] = await Promise.all([p1.json(), p2.json(), p3.json(), p4.json()]);
-      const movies = [...(d1.results || []), ...(d2.results || []), ...(d3.results || []), ...(d4.results || [])];
+      const movies = [
+        ...(d1.results||[]), ...(d2.results||[]),
+        ...(d3.results||[]), ...(d4.results||[]),
+      ];
 
       let tvResults = [];
       try {
@@ -194,8 +174,11 @@ export default function Home() {
           fetch(`https://api.themoviedb.org/3/tv/top_rated?api_key=${apiKey}&page=2`),
         ]);
         const [td1, td2, td3, td4] = await Promise.all([t1.json(), t2.json(), t3.json(), t4.json()]);
-        tvResults = [...(td1.results || []), ...(td2.results || []), ...(td3.results || []), ...(td4.results || [])];
-      } catch { /* TV fetch failed, movies only */ }
+        tvResults = [
+          ...(td1.results||[]), ...(td2.results||[]),
+          ...(td3.results||[]), ...(td4.results||[]),
+        ];
+      } catch { /* TV fetch failed — continue with movies only */ }
 
       combined = [...movies, ...tvResults];
     } catch (error) {
@@ -207,20 +190,7 @@ export default function Home() {
       } catch { combined = []; }
     }
 
-    const transformed = combined.slice(0, 120).map((item) => ({
-      id: item.id,
-      mediaType: item.title ? "movie" : "tv",
-      name: item.title || item.name,
-      poster: item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : null,
-      popularity: item.popularity || 0,
-      rating: item.vote_average || 0,
-      voteCount: item.vote_count || 0,
-      type: item.title ? "Movie" : "Series",
-      genres: item.genre_ids || [],
-      mood: [...new Set((item.genre_ids || []).map((id) => GENRE_TO_MOOD[id]).filter(Boolean))],
-      time: null,
-      platform: null,
-    }));
+    const transformed = combined.slice(0, 120).map(transformTMDbItem);
     setContentList(transformed);
     setAppReady(true);
   };
@@ -233,94 +203,54 @@ export default function Home() {
     setMessage("Analyzing your vibe...");
 
     setTimeout(async () => {
-      const seen = JSON.parse(localStorage.getItem("seen")) || [];
-      setMessage("Matching best content...");
-      setWasReset(false);
-
-      const activeMood = mood;
-      const activeTime = time;
-      const activeType = type;
-      const activePlatform = platform;
-
-      // Pre-score without time/platform (still null until enriched)
-      const scorePre = (item) => {
-        let s = 0;
-        if (activeType && item.type === activeType) s += 2;
-        if (activeMood && item.mood.includes(activeMood)) s += 3;
-        return s;
-      };
-
-      // Pre-filter by type + mood only
-      let candidatePool = contentList
-        .filter((item) => !seen.includes(item.name))
-        .filter((item) => activeType ? item.type === activeType : true)
-        .map((item) => ({ ...item, score: scorePre(item) }))
-        .filter((item) => (activeType || activeMood) ? item.score > 0 : true);
-
-      if (candidatePool.length === 0) {
-        localStorage.removeItem("seen");
-        if (seen.length > 0) setWasReset(true);
-        candidatePool = contentList
-          .filter((item) => activeType ? item.type === activeType : true)
-          .map((item) => ({ ...item, score: scorePre(item) }))
-          .filter((item) => (activeType || activeMood) ? item.score > 0 : true);
-      }
-
-      // Shuffle and take 20 candidates for enrichment
-      const shuffled = candidatePool.sort(() => 0.5 - Math.random()).slice(0, 20);
-
-      // Lazy fetch runtime + platform for 20 candidates only
-      setMessage("Fetching details...");
       const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
-      const enriched20 = await Promise.all(
-        shuffled.map(async (item) => ({
-          ...item,
-          time: item.time || await getRuntime(item.id, item.mediaType, apiKey),
-          platform: item.platform || await getProviders(item.id, item.mediaType, apiKey),
-        }))
-      );
+      const activeFilters = { mood, genre, time, type, platform };
 
-      // Full score with real time + platform values
-      const maxPossible = (activeType ? 2 : 0) + (activeMood ? 3 : 0) + (activeTime ? 2 : 0);
+      setMessage("Fetching details...");
 
-      const scoreFull = (item) => {
-        let s = 0;
-        if (activeType && item.type === activeType) s += 2;
-        if (activeMood && item.mood.includes(activeMood)) s += 3;
-        if (activeTime && item.time === activeTime) s += 2;
-        return s;
-      };
+      const result = await runSoloEngine({
+        items: contentList,
+        filters: activeFilters,
+        vibeText: vibe,
+        config: entertainmentConfig,
+        enricher: enrichItems,
+        apiKey,
+        seenTracker,
+      });
 
-      let finalList = enriched20
-        .map((item) => ({ ...item, score: scoreFull(item), maxPossible }))
-        .filter((item) => maxPossible === 0 ? true : item.score > 0)
-        .filter((item) => activePlatform && activePlatform !== "Any" ? item.platform === activePlatform : true);
+      const {
+        topPick,
+        backups,
+        trustLabel,
+        wasReset: reset,
+        wasFallback,
+        updatedItems,
+      } = result;
 
-      // Fallback: if platform filter kills everything, show best available
-      if (finalList.length === 0) {
-        finalList = enriched20.map((item) => ({ ...item, score: scoreFull(item), maxPossible }));
-      }
+      setWasReset(reset);
+      setContentList(updatedItems);
 
-      const maxScore = Math.max(...finalList.map((a) => a.score));
-      const sorted = [
-        ...finalList.filter((a) => a.score === maxScore).sort(() => 0.5 - Math.random()),
-        ...finalList.filter((a) => a.score !== maxScore).sort(() => 0.5 - Math.random()),
-      ];
-
-      const top3 = sorted.slice(0, 3);
-      const newSeen = [...seen, ...top3.map((i) => i.name)];
-      localStorage.setItem("seen", JSON.stringify(newSeen));
-      setResults(top3);
-      logEvent(top3, maxPossible);
-
-      // Cache enriched values back into contentList
-      setContentList((prev) => prev.map((item) => {
-        const match = enriched20.find((e) => e.id === item.id);
-        return match ? { ...item, time: match.time, platform: match.platform } : item;
+      const top3 = [topPick, ...backups].filter(Boolean).map((item) => ({
+        ...item,
+        trustLabel,
       }));
 
-      const topNames = top3.map((i) => i.name);
-      const available = contentList.filter((i) => !topNames.includes(i.name));
+      setResults(top3);
+      setLastPickTime(DOMAIN);
+
+      logPick({
+        domain: DOMAIN,
+        mode: "solo",
+        filters: { ...activeFilters, vibe: vibe.trim() },
+        topPick,
+        matchLabel: trustLabel,
+        wasFallback,
+        sessionId: null,
+      });
+
+      // Discover section
+      const topNames = new Set(top3.map((i) => i.name));
+      const available = updatedItems.filter((i) => !topNames.has(i.name));
       const trending = [...available].sort((a, b) => b.popularity - a.popularity)[0];
       const topRated = [...available]
         .filter((i) => i.name !== trending?.name)
@@ -340,26 +270,20 @@ export default function Home() {
   };
 
   const handleTryAgain = () => {
+    if (isImplicitRejection(DOMAIN) && results[0]) {
+      logRejection({
+        domain: DOMAIN,
+        mode: "solo",
+        filters: { mood, genre, time, type, platform },
+        rejectedPick: results[0],
+        sessionId: null,
+      });
+    }
     setResults([]);
     setExplore([]);
     setWasReset(false);
     inputRef.current?.focus();
   };
-
-  const logEvent = async (results, maxPossible) => {
-    try {
-      await supabase.from("events").insert({
-        mode: "solo",
-        filters: { mood, time, type, platform, vibe: vibe.trim() },
-        top_pick: results[0]?.name || null,
-        match_label: matchLabel(results[0]?.score, maxPossible),
-        was_fallback: results[0]?.score === 0,
-        session_id: null,
-      });
-    } catch { /* silent — never block user */ }
-  };
-
-
 
   // ─── Styles ────────────────────────────────────────────────────────────────
 
@@ -374,6 +298,18 @@ export default function Home() {
       cursor: "pointer",
       transition: "all 0.15s",
       whiteSpace: "nowrap",
+    }),
+    smallPill: (active) => ({
+      background: active ? "#e53935" : "#111",
+      border: `1px solid ${active ? "#e53935" : "#222"}`,
+      borderRadius: "20px",
+      padding: "3px 10px",
+      fontSize: "11px",
+      color: active ? "#fff" : "#666",
+      cursor: "pointer",
+      transition: "all 0.15s",
+      whiteSpace: "nowrap",
+      flexShrink: 0,
     }),
   };
 
@@ -445,14 +381,15 @@ export default function Home() {
 
         {/* ── Hint text ── */}
         <p style={{ fontSize: "10px", color: "#2a2a2a", margin: "0 0 8px", paddingLeft: "2px" }}>
-          Try: "something funny", "action movie", "chill night"
+          Try: "horror movie", "romantic drama", "funny 30 min show"
         </p>
 
         {/* ── Parsed chips ── */}
-        {(parsed.mood || parsed.time) && (
+        {(parsed.mood || parsed.genre || parsed.time) && (
           <div style={{ display: "flex", gap: "6px", marginBottom: "8px", flexWrap: "wrap" }}>
-            {parsed.mood && <span style={S.pill(false)}>{parsed.mood} mood</span>}
-            {parsed.time && <span style={S.pill(false)}>{parsed.time}</span>}
+            {getParsedChips(parsed, GENRES).map((chip, i) => (
+              <span key={i} style={S.pill(false)}>{chip}</span>
+            ))}
           </div>
         )}
 
@@ -468,6 +405,7 @@ export default function Home() {
             flexDirection: "column",
             gap: "10px",
           }}>
+            {/* Type — structural, never auto-cleared */}
             <div>
               <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>Type</p>
               <div style={{ display: "flex", gap: "6px" }}>
@@ -476,24 +414,50 @@ export default function Home() {
                 ))}
               </div>
             </div>
+
+            {/* Mood — intent filter, clears vibe + genre */}
             <div>
               <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>Mood</p>
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                 {MOODS.map((m) => (
-                  <button key={m} onClick={() => setMood(mood === m ? "" : m)} style={S.pill(mood === m)}>{m}</button>
+                  <button key={m} onClick={() => handleMoodSelect(m)} style={S.pill(mood === m)}>{m}</button>
                 ))}
               </div>
             </div>
+
+            {/* Genre — intent filter, clears vibe + mood */}
+            <div>
+              <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
+                Genre <span style={{ color: "#222", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>→ scroll</span>
+              </p>
+              <div style={{ display: "flex", gap: "5px", overflowX: "auto", paddingBottom: "4px", paddingTop: "2px", scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                {GENRES.map((g) => (
+                  <button
+                    key={g.id}
+                    onClick={() => handleGenreSelect(String(g.id))}
+                    style={S.smallPill(genre === String(g.id))}
+                  >
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Time — intent filter, clears vibe */}
             <div>
               <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>Time</p>
               <div style={{ display: "flex", gap: "6px" }}>
                 {TIMES.map(([val, label]) => (
-                  <button key={val} onClick={() => setTime(time === val ? "" : val)} style={S.pill(time === val)}>{label}</button>
+                  <button key={val} onClick={() => handleTimeSelect(val)} style={S.pill(time === val)}>{label}</button>
                 ))}
               </div>
             </div>
+
+            {/* Platform — structural, never auto-cleared */}
             <div>
-              <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>Platform <span style={{ color: "#222", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>→ scroll</span></p>
+              <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
+                Platform <span style={{ color: "#222", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>→ scroll</span>
+              </p>
               <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px", paddingTop: "2px", scrollbarWidth: "none", msOverflowStyle: "none" }}>
                 {PLATFORMS.map((p) => (
                   <button key={p} onClick={() => setPlatform(platform === p ? "" : p)} style={{ ...S.pill(platform === p), flexShrink: 0 }}>{p}</button>
@@ -551,7 +515,7 @@ export default function Home() {
                 <p style={{ fontSize: "15px", fontWeight: 500, color: "#fff", margin: "0 0 2px", lineHeight: 1.3 }}>{results[0].name}</p>
                 <p style={{ fontSize: "11px", color: "#444", margin: "0 0 6px" }}>{results[0].type}</p>
                 <span style={{ fontSize: "10px", background: "#1a1a1a", border: "1px solid #222", borderRadius: "20px", padding: "2px 8px", color: "#aaa" }}>
-                  {matchLabel(results[0].score, results[0].maxPossible)}
+                  {results[0].trustLabel}
                 </span>
                 {results[0].rating > 0 && (
                   <p style={{ fontSize: "10px", color: "#555", margin: "5px 0 0" }}>
