@@ -28,6 +28,7 @@ import {
 // ─── Helper: enforce hard filters on final output ─────────────────────────────
 // Runs on final sorted output — guarantees type + genre always hold.
 // Platform is intentionally excluded — can be sacrificed in fallback.
+// NO escape hatch — if everything is removed, caller receives empty array.
 
 function enforceHardFiltersOnOutput(items, filters, hardFilterRules) {
   if (!items || items.length === 0) return [];
@@ -70,19 +71,34 @@ export async function runSoloEngine({
   } = config;
 
   // ── Step 1: Hard filter ──
-  let hardFiltered = applyHardFilters(items, filters, hardFilterRules);
-  if (hardFiltered.length === 0) hardFiltered = [...items];
+  // FIX: hardFiltered is ALWAYS the boundary — never fall back to raw items.
+  // Raw items contain all types (Movie + Series). Falling back to them is
+  // what caused Series to leak when Movie was the selected type.
+  const hardFiltered = applyHardFilters(items, filters, hardFilterRules);
 
   // ── Step 2: Remove seen items ──
   const seen = seenTracker.getSeen();
   let withoutSeen = applySeenFilter(hardFiltered, seen);
 
   // ── Step 3: Handle pool exhaustion ──
+  // FIX: on exhaustion, reset seen and reuse hardFiltered — never raw items.
+  // hardFiltered is already type+genre safe. Using raw items here was the
+  // primary cause of Series leaking on the 3rd pick.
   let wasReset = false;
-  if (withoutSeen.length === 0 && hardFiltered.length > 0) {
+  if (withoutSeen.length === 0) {
     seenTracker.clearSeen();
     wasReset = seen.length > 0;
     withoutSeen = [...hardFiltered];
+  }
+
+  // Edge case: hardFiltered itself is empty (filter combo returns nothing).
+  // Return empty result — do not breach type/genre to find something.
+  if (withoutSeen.length === 0) {
+    return {
+      topPick: null, backups: [], trustLabel: "",
+      wasReset, wasFallback: true, maxPossible: 0,
+      updatedItems: items,
+    };
   }
 
   // ── Step 4: Vague request detection ──
@@ -135,7 +151,6 @@ export async function runSoloEngine({
     }));
 
   if (fullScored.length === 0) {
-    // Enrichment completely failed — return null result, page handles gracefully
     return {
       topPick: null, backups: [], trustLabel: "",
       wasReset, wasFallback: true, maxPossible,
@@ -173,12 +188,12 @@ export async function runSoloEngine({
   const sorted = sortAndShuffle(finalList);
 
   // ── Step 13: SAFETY — enforce type + genre on final output ──
-  const safeTop = sorted.length > 0
-    ? enforceHardFiltersOnOutput(sorted, filters, hardFilterRules)
-    : [];
-
-  // If safety removed everything use sorted (extreme edge case)
-  const top3 = (safeTop.length > 0 ? safeTop : sorted).slice(0, 3);
+  // FIX: removed escape hatch "(safeTop.length > 0 ? safeTop : sorted)".
+  // The old fallback to `sorted` allowed unfiltered items (Series) to appear
+  // when enforceHardFiltersOnOutput removed everything. Now if safeTop is
+  // empty, we return empty — type + genre are NEVER breached.
+  const safeTop = enforceHardFiltersOnOutput(sorted, filters, hardFilterRules);
+  const top3 = safeTop.slice(0, 3);
 
   if (top3.length === 0) {
     return {
@@ -241,8 +256,17 @@ export async function runGroupEngine({
   const mergedFilters = mergeFilters(participants, filterKeys);
 
   // ── Step 2: Hard filter ──
-  let hardFiltered = applyHardFilters(items, mergedFilters, hardFilterRules);
-  if (hardFiltered.length === 0) hardFiltered = [...items];
+  // FIX: same as solo — never fall back to raw items if hardFiltered is empty.
+  const hardFiltered = applyHardFilters(items, mergedFilters, hardFilterRules);
+
+  // Edge case: no items pass hard filters — return empty result.
+  if (hardFiltered.length === 0) {
+    return {
+      topPick: null, backups: [], trustLabel: "",
+      mergedFilters, wasFallback: true, maxPossible: 0,
+      fairness: { satisfied: 0, total: participants.length, pct: 0 },
+    };
+  }
 
   // ── Step 3: Pre-score ──
   const maxPossible = calcMaxPossible(mergedFilters, weights);
@@ -322,10 +346,10 @@ export async function runGroupEngine({
   const sorted = sortAndShuffle(finalList);
 
   // ── Step 10: SAFETY — enforce type + genre on final output ──
-  const safeTop = sorted.length > 0
-    ? enforceHardFiltersOnOutput(sorted, mergedFilters, hardFilterRules)
-    : [];
-  const top3 = (safeTop.length > 0 ? safeTop : sorted).slice(0, 3);
+  // FIX: removed escape hatch — same reasoning as solo engine Step 13.
+  // type + genre are NEVER breached, even if safeTop is empty.
+  const safeTop = enforceHardFiltersOnOutput(sorted, mergedFilters, hardFilterRules);
+  const top3 = safeTop.slice(0, 3);
 
   if (top3.length === 0) {
     return {
