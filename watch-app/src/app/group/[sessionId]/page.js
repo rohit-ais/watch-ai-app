@@ -1,45 +1,25 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "../../../lib/supabase";
+import { entertainmentConfig, MOODS, TYPES, PLATFORMS, DOMAIN } from "../../../lib/domains/entertainment/config";
+import { transformTMDbItem, enrichItems } from "../../../lib/domains/entertainment/enricher";
+import { runGroupEngine } from "../../../lib/engine/core";
+import { getTrustLabel } from "../../../lib/engine/scorer";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const MOODS = ["Chill", "Fun", "Intense", "Light"];
 const TIMES = [["20-30", "20-30m"], ["1hr", "1 Hr"], ["2hr+", "2+ Hr"]];
-const TYPES = ["Movie", "Series"];
-const PLATFORMS = ["Netflix", "Prime", "Disney+", "JioCinema", "Any"];
-const GENRE_TO_MOOD = {
-  28: "Intense", 12: "Fun", 16: "Light", 35: "Fun",
-  18: "Intense", 27: "Intense", 10749: "Chill",
-  878: "Intense", 10751: "Light", 99: "Chill",
-};
+
+// filterKeys tells the group engine which participant columns to merge
+const FILTER_KEYS = ["mood", "time", "type", "platform"];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function normalizePlatform(name) {
-  if (!name) return "Other";
-  const n = name.toLowerCase();
-  if (n.includes("netflix")) return "Netflix";
-  if (n.includes("amazon") || n.includes("prime")) return "Prime";
-  if (n.includes("disney")) return "Disney+";
-  if (n.includes("jio")) return "JioCinema";
-  return "Other";
-}
 
 function formatVotes(count) {
   if (!count) return null;
   if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
   if (count >= 1000) return `${Math.round(count / 1000)}K`;
   return count.toString();
-}
-
-function matchLabel(score, max) {
-  const pct = max ? Math.round((score / max) * 100) : 0;
-  if (pct === 100) return "⚡ Perfect Match";
-  if (pct >= 75) return "👍 Strong Match";
-  if (pct >= 50) return "🙂 Good Match";
-  if (pct > 0) return "🎲 Best Available";
-  return "🎬 Recommended for you";
 }
 
 const pill = (active) => ({
@@ -56,12 +36,11 @@ const pill = (active) => ({
 export default function GroupRoom({ params }) {
   const { sessionId } = React.use(params);
 
-  // ── Session + participants (always loaded fresh from DB) ──
+  // ── Session + participants ──
   const [session, setSession] = useState(null);
   const [participants, setParticipants] = useState([]);
 
   // ── My identity — set ONCE on join, persisted in localStorage ──
-  // Keys: `pid-{sessionId}` and `host-{sessionId}`
   const [myId, setMyId] = useState(null);
   const [isHost, setIsHost] = useState(false);
   const [joined, setJoined] = useState(false);
@@ -95,7 +74,6 @@ export default function GroupRoom({ params }) {
   // ─── INIT ─────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    // Step 1: Restore identity from localStorage (survives re-renders)
     const storedPid = localStorage.getItem(`pid-${sessionId}`);
     const storedHost = localStorage.getItem(`host-${sessionId}`) === "true";
 
@@ -107,12 +85,10 @@ export default function GroupRoom({ params }) {
       setJoined(true);
     }
 
-    // Step 2: Load data
     loadSession();
     loadParticipants();
     fetchContent();
 
-    // Step 3: Realtime — unique channel per client
     const uid = Math.random().toString(36).slice(2, 8);
 
     const sessionCh = supabase
@@ -121,7 +97,6 @@ export default function GroupRoom({ params }) {
         event: "UPDATE", schema: "public", table: "sessions",
         filter: `id=eq.${sessionId}`,
       }, (payload) => {
-        // ONLY update session state — never touch isHost or myId here
         setSession(payload.new);
         if (payload.new.status === "decided" && payload.new.final_pick) {
           try { setResults(JSON.parse(payload.new.final_pick)); } catch { }
@@ -144,7 +119,6 @@ export default function GroupRoom({ params }) {
   }, [sessionId]);
 
   // ─── LOAD SESSION ─────────────────────────────────────────────────────────
-  // Only updates session state — never touches isHost/myId
 
   const loadSession = async () => {
     const { data } = await supabase
@@ -167,6 +141,7 @@ export default function GroupRoom({ params }) {
   };
 
   // ─── FETCH CONTENT ────────────────────────────────────────────────────────
+  // Uses transformTMDbItem from enricher — same transform as solo engine.
 
   const fetchContent = async () => {
     const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
@@ -178,19 +153,12 @@ export default function GroupRoom({ params }) {
         fetch(`https://api.themoviedb.org/3/tv/top_rated?api_key=${apiKey}&page=1`),
       ]);
       const [d1, d2, d3, d4] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json()]);
-      const all = [...(d1.results || []), ...(d2.results || []), ...(d3.results || []), ...(d4.results || [])];
-      setContentList(all.slice(0, 120).map((item) => ({
-        id: item.id,
-        mediaType: item.title ? "movie" : "tv",
-        name: item.title || item.name,
-        poster: item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : null,
-        popularity: item.popularity || 0,
-        rating: item.vote_average || 0,
-        voteCount: item.vote_count || 0,
-        type: item.title ? "Movie" : "Series",
-        mood: [...new Set((item.genre_ids || []).map((id) => GENRE_TO_MOOD[id]).filter(Boolean))],
-        time: null, platform: null,
-      })));
+      const all = [
+        ...(d1.results || []), ...(d2.results || []),
+        ...(d3.results || []), ...(d4.results || []),
+      ];
+      // ✅ transformTMDbItem — shared with solo engine, single source of truth
+      setContentList(all.slice(0, 120).map(transformTMDbItem));
     } catch { }
     setContentReady(true);
   };
@@ -203,18 +171,15 @@ export default function GroupRoom({ params }) {
     setJoinError("");
 
     try {
-      // 1. Insert participant row
       const { data: p, error: pErr } = await supabase
         .from("participants")
         .insert({ session_id: sessionId, name: joinName.trim() })
         .select().single();
       if (pErr) throw pErr;
 
-      // 2. Read current session to check if host slot is taken
       const { data: s } = await supabase
         .from("sessions").select("host_participant_id").eq("id", sessionId).single();
 
-      // 3. First person to join = host
       const becomeHost = !s?.host_participant_id;
 
       if (becomeHost) {
@@ -224,18 +189,15 @@ export default function GroupRoom({ params }) {
         if (uErr) throw uErr;
       }
 
-      // 4. Persist to localStorage — session-scoped, permanent for this session
       localStorage.setItem(`pid-${sessionId}`, p.id);
       localStorage.setItem(`host-${sessionId}`, becomeHost ? "true" : "false");
 
-      // 5. Set state — these are set once and FINAL
       myIdRef.current = p.id;
       isHostRef.current = becomeHost;
       setMyId(p.id);
       setIsHost(becomeHost);
       setJoined(true);
 
-      // 6. Reload fresh data
       await loadSession();
       await loadParticipants();
 
@@ -283,6 +245,7 @@ export default function GroupRoom({ params }) {
   };
 
   // ─── DECIDE ───────────────────────────────────────────────────────────────
+  // ✅ Now uses runGroupEngine from core.js — no inline scoring logic.
 
   const handleDecide = async () => {
     if (!contentReady || !contentList.length) return;
@@ -292,94 +255,44 @@ export default function GroupRoom({ params }) {
       .from("participants").select("*").eq("session_id", sessionId);
     if (!votes?.length) { setDeciding(false); return; }
 
-    const majority = (arr) => {
-      const freq = {};
-      arr.forEach((v) => { if (v) freq[v] = (freq[v] || 0) + 1; });
-      return Object.entries(freq).sort((a, b) => b[1] - a[1])[0]?.[0] || "";
-    };
-
-    const mergedMood = majority(votes.map((v) => v.mood));
-    const mergedTime = majority(votes.map((v) => v.time));
-    const mergedType = majority(votes.map((v) => v.type));
-    const pVotes = votes.map((v) => v.platform).filter(Boolean);
-    const mergedPlatform = pVotes.length > 0 && pVotes.every((p) => p === pVotes[0]) ? pVotes[0] : "";
-
-    const scorePre = (item) => {
-      let s = 0;
-      if (mergedType && item.type === mergedType) s += 2;
-      if (mergedMood && item.mood.includes(mergedMood)) s += 3;
-      return s;
-    };
-
-    let pool = contentList
-      .filter((item) => mergedType ? item.type === mergedType : true)
-      .map((item) => ({ ...item, score: scorePre(item) }))
-      .filter((item) => (mergedType || mergedMood) ? item.score > 0 : true)
-      .sort(() => 0.5 - Math.random()).slice(0, 20);
-
-    if (!pool.length) pool = contentList.sort(() => 0.5 - Math.random()).slice(0, 20);
-
     const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
-    const enriched = await Promise.all(pool.map(async (item) => {
-      let runtime = item.time;
-      let ip = item.platform;
-      if (!runtime) {
-        try {
-          const res = await fetch(`https://api.themoviedb.org/3/${item.mediaType}/${item.id}?api_key=${apiKey}`);
-          const d = await res.json();
-          const mins = item.mediaType === "movie" ? d.runtime : d.episode_run_time?.[0] || d.last_episode_to_air?.runtime || null;
-          runtime = !mins ? "2hr+" : mins <= 35 ? "20-30" : mins <= 75 ? "1hr" : "2hr+";
-        } catch { runtime = "2hr+"; }
-      }
-      if (!ip) {
-        try {
-          const res = await fetch(`https://api.themoviedb.org/3/${item.mediaType}/${item.id}/watch/providers?api_key=${apiKey}`);
-          const d = await res.json();
-          const pr = d.results?.IN?.flatrate;
-          ip = pr?.length ? normalizePlatform(pr[0].provider_name) : "Other";
-        } catch { ip = "Other"; }
-      }
-      return { ...item, time: runtime, platform: ip };
-    }));
 
-    const maxPossible = (mergedType ? 2 : 0) + (mergedMood ? 3 : 0) + (mergedTime ? 2 : 0);
-    const scoreFull = (item) => {
-      let s = 0;
-      if (mergedType && item.type === mergedType) s += 2;
-      if (mergedMood && item.mood.includes(mergedMood)) s += 3;
-      if (mergedTime && item.time === mergedTime) s += 2;
-      return s;
-    };
+    const result = await runGroupEngine({
+      items: contentList,
+      participants: votes,
+      filterKeys: FILTER_KEYS,
+      config: entertainmentConfig,
+      enricher: enrichItems,
+      apiKey,
+    });
 
-    let finalList = enriched
-      .map((item) => ({ ...item, score: scoreFull(item), maxPossible }))
-      .filter((item) => maxPossible === 0 ? true : item.score > 0)
-      .filter((item) => mergedPlatform && mergedPlatform !== "Any" ? item.platform === mergedPlatform : true);
+    const { topPick, backups, trustLabel, mergedFilters, wasFallback } = result;
 
-    if (!finalList.length) finalList = enriched.map((item) => ({ ...item, score: scoreFull(item), maxPossible }));
+    // Build top3 with trustLabel attached — same shape as solo engine output
+    const top3 = [topPick, ...backups]
+      .filter(Boolean)
+      .map((item) => ({ ...item, trustLabel }));
 
-    const maxScore = Math.max(...finalList.map((a) => a.score));
-    const sorted = [
-      ...finalList.filter((a) => a.score === maxScore).sort(() => 0.5 - Math.random()),
-      ...finalList.filter((a) => a.score !== maxScore).sort(() => 0.5 - Math.random()),
-    ];
-    const top3 = sorted.slice(0, 3);
-
+    // Persist to Supabase — all participants see the result via Realtime
     await supabase.from("sessions")
       .update({ status: "decided", final_pick: JSON.stringify(top3) })
       .eq("id", sessionId);
 
     setResults(top3);
+
+    // Log event
     try {
       await supabase.from("events").insert({
         mode: "group",
-        filters: { mood: mergedMood, time: mergedTime, type: mergedType, platform: mergedPlatform },
-        top_pick: top3[0]?.name || null,
-        match_label: matchLabel(top3[0]?.score, maxPossible),
-        was_fallback: top3[0]?.score === 0,
+        domain: DOMAIN,
+        filters: mergedFilters,
+        top_pick: topPick?.name || null,
+        match_label: trustLabel,
+        was_fallback: wasFallback,
         session_id: sessionId,
       });
     } catch { /* silent */ }
+
     setDeciding(false);
   };
 
@@ -395,8 +308,6 @@ export default function GroupRoom({ params }) {
   const submittedCount = participants.filter((p) => p.mood || p.type || p.time || p.platform).length;
   const allSubmitted = participants.length >= 2 && submittedCount === participants.length;
   const voteActive = mood || time || type || platform;
-
-  // Host slot empty = next person to join will be host
   const hostSlotEmpty = session && !session.host_participant_id;
 
   // ─── LOADING ──────────────────────────────────────────────────────────────
@@ -450,26 +361,20 @@ export default function GroupRoom({ params }) {
 
         {/* ════════════════════════════════════════════════
             STATE: WAITING + NOT JOINED
-            Shows join form. Copy adapts: host vs participant
         ════════════════════════════════════════════════ */}
         {!joined && session.status === "waiting" && (
           <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: "14px", padding: "16px", marginBottom: "12px" }}>
-
-            {/* Host copy vs participant copy */}
             {hostSlotEmpty ? (
-              <>
-                <div style={{ background: "#0d1a0d", border: "1px solid #1e3a1e", borderRadius: "8px", padding: "8px 12px", marginBottom: "12px" }}>
-                  <p style={{ fontSize: "11px", color: "#4caf50", margin: "0 0 2px", fontWeight: 500 }}>👑 You're creating this session</p>
-                  <p style={{ fontSize: "10px", color: "#3a5a3a", margin: 0 }}>Enter your name to become the host and get the shareable link.</p>
-                </div>
-              </>
+              <div style={{ background: "#0d1a0d", border: "1px solid #1e3a1e", borderRadius: "8px", padding: "8px 12px", marginBottom: "12px" }}>
+                <p style={{ fontSize: "11px", color: "#4caf50", margin: "0 0 2px", fontWeight: 500 }}>👑 You're creating this session</p>
+                <p style={{ fontSize: "10px", color: "#3a5a3a", margin: 0 }}>Enter your name to become the host and get the shareable link.</p>
+              </div>
             ) : (
               <>
                 <p style={{ fontSize: "13px", color: "#555", margin: "0 0 2px" }}>You've been invited.</p>
                 <p style={{ fontSize: "11px", color: "#333", margin: "0 0 12px" }}>Enter your name to join the session.</p>
               </>
             )}
-
             <div style={{ background: "#0d0d0d", border: `1px solid ${joinName ? "#4caf50" : "#1a1a1a"}`, borderRadius: "10px", padding: "10px 12px", marginBottom: "10px", transition: "border-color 0.2s" }}>
               <input
                 autoFocus
@@ -496,13 +401,11 @@ export default function GroupRoom({ params }) {
         ════════════════════════════════════════════════ */}
         {joined && isHost && session.status === "waiting" && (
           <>
-            {/* Host badge */}
             <div style={{ background: "#0d1a0d", border: "1px solid #1e3a1e", borderRadius: "10px", padding: "8px 12px", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ fontSize: "13px" }}>👑</span>
               <p style={{ fontSize: "11px", color: "#4caf50", margin: 0 }}>You are the host. Share the link to invite others.</p>
             </div>
 
-            {/* Share link */}
             <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: "14px", padding: "14px", marginBottom: "12px" }}>
               <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 8px" }}>Share this link</p>
               <div style={{ background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: "10px", padding: "10px 12px", marginBottom: "10px" }}>
@@ -510,15 +413,11 @@ export default function GroupRoom({ params }) {
                   {typeof window !== "undefined" ? window.location.href : ""}
                 </p>
               </div>
-              <button
-                onClick={handleShare}
-                style={{ width: "100%", background: "#0d1a0d", border: "1px solid #1e3a1e", borderRadius: "8px", padding: "10px", fontSize: "13px", color: "#4caf50", cursor: "pointer", fontFamily: "'DM Sans',system-ui,sans-serif" }}
-              >
+              <button onClick={handleShare} style={{ width: "100%", background: "#0d1a0d", border: "1px solid #1e3a1e", borderRadius: "8px", padding: "10px", fontSize: "13px", color: "#4caf50", cursor: "pointer", fontFamily: "'DM Sans',system-ui,sans-serif" }}>
                 📋 Copy / Share link
               </button>
             </div>
 
-            {/* Who's here */}
             <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: "14px", padding: "14px", marginBottom: "12px" }}>
               <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 10px" }}>Who's here ({participants.length})</p>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -535,7 +434,6 @@ export default function GroupRoom({ params }) {
               </div>
             </div>
 
-            {/* Start deciding — host only */}
             <button
               onClick={handleStartVoting}
               disabled={participants.length < 2}
@@ -556,8 +454,6 @@ export default function GroupRoom({ params }) {
               <p style={{ fontSize: "13px", color: "#888", margin: "0 0 4px" }}>You're in.</p>
               <p style={{ fontSize: "11px", color: "#333", margin: 0 }}>Waiting for the host to start the session...</p>
             </div>
-
-            {/* Who's here — participant view */}
             <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: "14px", padding: "14px" }}>
               <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 10px" }}>Who's here ({participants.length})</p>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -578,8 +474,6 @@ export default function GroupRoom({ params }) {
 
         {/* ════════════════════════════════════════════════
             STATE: VOTING
-            Both host and participant see filter form.
-            Only host sees Decide button.
         ════════════════════════════════════════════════ */}
         {joined && session.status === "voting" && (
           <>
@@ -631,7 +525,6 @@ export default function GroupRoom({ params }) {
               </div>
             )}
 
-            {/* Vote progress */}
             <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: "14px", padding: "14px", marginBottom: "12px" }}>
               <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 10px" }}>
                 Votes in — {submittedCount}/{participants.length}
@@ -652,7 +545,6 @@ export default function GroupRoom({ params }) {
               </div>
             </div>
 
-            {/* Decide button — HOST ONLY */}
             {isHost && (
               <button
                 onClick={handleDecide}
@@ -666,7 +558,7 @@ export default function GroupRoom({ params }) {
         )}
 
         {/* ════════════════════════════════════════════════
-            STATE: DECIDED — same for everyone
+            STATE: DECIDED
         ════════════════════════════════════════════════ */}
         {session.status === "decided" && results.length > 0 && (
           <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: "16px", padding: "14px" }}>
@@ -677,7 +569,7 @@ export default function GroupRoom({ params }) {
                 <p style={{ fontSize: "15px", fontWeight: 500, color: "#fff", margin: "0 0 2px", lineHeight: 1.3 }}>{results[0].name}</p>
                 <p style={{ fontSize: "11px", color: "#444", margin: "0 0 6px" }}>{results[0].type}</p>
                 <span style={{ fontSize: "10px", background: "#1a1a1a", border: "1px solid #222", borderRadius: "20px", padding: "2px 8px", color: "#aaa" }}>
-                  {matchLabel(results[0].score, results[0].maxPossible)}
+                  {results[0].trustLabel}
                 </span>
                 {results[0].rating > 0 && (
                   <p style={{ fontSize: "10px", color: "#555", margin: "5px 0 0" }}>
@@ -696,11 +588,7 @@ export default function GroupRoom({ params }) {
                       <div>
                         <p style={{ fontSize: "13px", color: "#888", margin: 0 }}>{item.name}</p>
                         <p style={{ fontSize: "10px", color: "#333", margin: 0 }}>{item.type}</p>
-                        {item.rating > 0 && (
-                          <p style={{ fontSize: "9px", color: "#444", margin: 0 }}>
-                            ⭐ {item.rating.toFixed(1)}
-                          </p>
-                        )}
+                        {item.rating > 0 && <p style={{ fontSize: "9px", color: "#444", margin: 0 }}>⭐ {item.rating.toFixed(1)}</p>}
                       </div>
                     </div>
                   ))}
