@@ -3,6 +3,15 @@
 // Entertainment-specific keyword maps.
 // Returns: { mood, genre, time }
 
+// ─── Helper: word-boundary match ─────────────────────────────────────────────
+// Prevents substring false positives e.g. "tense" matching inside "intense".
+// Checks if keyword appears as a whole word in the input text.
+
+function matchesWord(text, keyword) {
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<![a-z])${escaped}(?![a-z])`, "i").test(text);
+}
+
 // ─── Mood keywords ────────────────────────────────────────────────────────────
 
 const MOOD_KEYWORDS = {
@@ -47,7 +56,7 @@ const GENRE_KEYWORDS = {
   9648:  ["mystery", "detective", "whodunit", "suspense", "investigation"],
   10749: ["romance", "romantic", "love story", "love", "date night"],
   878:   ["sci-fi", "science fiction", "space", "alien", "future", "robot", "dystopia"],
-  53:    ["thriller", "suspense", "psychological", "tense", "gripping"],
+  53:    ["thriller", "psychological", "tense", "gripping"],
   10752: ["war", "military", "battle", "world war", "soldier"],
   37:    ["western", "cowboy", "wild west"],
   10751: ["family", "kids", "children", "wholesome", "all ages"],
@@ -67,6 +76,7 @@ const TIME_KEYWORDS = {
  * Parse vibe text into structured filters.
  * Genre detection takes priority over mood detection.
  * If genre detected → mood is derived from genre mapping.
+ * All keyword matching uses word-boundary check — no substring false positives.
  *
  * @param {string} text  - Raw user input
  * @returns {{ mood: string, genre: string|null, time: string }}
@@ -81,18 +91,18 @@ export function parseVibe(text) {
 
   // ── Genre detection (highest priority) ──
   for (const [genreId, keywords] of Object.entries(GENRE_KEYWORDS)) {
-    if (keywords.some((k) => lower.includes(k))) {
-      genre = genreId; // store as string ID
+    if (keywords.some((k) => matchesWord(lower, k))) {
+      genre = genreId;
       break;
     }
   }
 
   // ── Mood detection ──
-  // If genre detected, derive mood from genre
-  // Otherwise detect from mood keywords
+  // If genre detected, derive mood from genre.
+  // Otherwise detect from mood keywords using word-boundary match.
   if (!genre) {
     for (const [m, keywords] of Object.entries(MOOD_KEYWORDS)) {
-      if (keywords.some((k) => lower.includes(k))) {
+      if (keywords.some((k) => matchesWord(lower, k))) {
         mood = m;
         break;
       }
@@ -101,7 +111,7 @@ export function parseVibe(text) {
 
   // ── Time detection ──
   for (const [t, keywords] of Object.entries(TIME_KEYWORDS)) {
-    if (keywords.some((k) => lower.includes(k))) {
+    if (keywords.some((k) => matchesWord(lower, k))) {
       time = t;
       break;
     }

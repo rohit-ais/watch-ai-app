@@ -56,6 +56,7 @@ export default function Home() {
 
   // Results
   const [results, setResults] = useState([]);
+  const [noResults, setNoResults] = useState(false); // FIX: empty state flag
   const [explore, setExplore] = useState([]);
   const [wasReset, setWasReset] = useState(false);
 
@@ -81,9 +82,6 @@ export default function Home() {
   }, []);
 
   // ─── Vibe input ────────────────────────────────────────────────────────────
-  // RULE: Typing in bar clears intent filters (mood, genre, time)
-  // and sets them from vibe parsing.
-  // Type and platform are structural — never touched by vibe.
 
   const handleVibeChange = (e) => {
     const val = e.target.value;
@@ -92,12 +90,10 @@ export default function Home() {
     if (val.length > 2) {
       const p = parseVibe(val);
       setParsed(p);
-      // Vibe takes over intent filters completely
       setMood(p.mood || "");
       setGenre(p.genre || null);
       setTime(p.time || "");
     } else {
-      // Short text — clear intent filters set by vibe
       setParsed({ mood: "", genre: null, time: "" });
       setMood("");
       setGenre(null);
@@ -108,7 +104,6 @@ export default function Home() {
   const clearVibe = () => {
     setVibe("");
     setParsed({ mood: "", genre: null, time: "" });
-    // Clear intent filters — user is now in filter mode
     setMood("");
     setGenre(null);
     setTime("");
@@ -116,29 +111,22 @@ export default function Home() {
   };
 
   // ─── Filter pill handlers ──────────────────────────────────────────────────
-  // RULE: Clicking a pill clears vibe text and takes over.
-  // Genre and mood never coexist — selecting one clears the other.
 
   const handleMoodSelect = (m) => {
-    // Clear vibe — switching to filter mode
     setVibe("");
     setParsed({ mood: "", genre: null, time: "" });
-    // Mood clears genre
     setGenre(null);
     setMood(mood === m ? "" : m);
   };
 
   const handleGenreSelect = (g) => {
-    // Clear vibe — switching to filter mode
     setVibe("");
     setParsed({ mood: "", genre: null, time: "" });
-    // Genre clears mood
     setMood("");
     setGenre(genre === g ? null : g);
   };
 
   const handleTimeSelect = (t) => {
-    // Clear vibe time — switching to filter mode
     setVibe("");
     setParsed({ mood: "", genre: null, time: "" });
     setTime(time === t ? "" : t);
@@ -200,6 +188,7 @@ export default function Home() {
   const handlePick = () => {
     if (!isActive) return;
     setLoading(true);
+    setNoResults(false); // reset empty state on new pick
     setMessage("Analyzing your vibe...");
 
     setTimeout(async () => {
@@ -230,12 +219,23 @@ export default function Home() {
       setWasReset(reset);
       setContentList(updatedItems);
 
+      // FIX: if engine returns no topPick, show empty state instead of
+      // silently hiding the result block.
+      if (!topPick) {
+        setResults([]);
+        setNoResults(true);
+        setExplore([]);
+        setTimeout(() => { setLoading(false); setMessage(""); }, 300);
+        return;
+      }
+
       const top3 = [topPick, ...backups].filter(Boolean).map((item) => ({
         ...item,
         trustLabel,
       }));
 
       setResults(top3);
+      setNoResults(false);
       setLastPickTime(DOMAIN);
 
       logPick({
@@ -280,6 +280,7 @@ export default function Home() {
       });
     }
     setResults([]);
+    setNoResults(false);
     setExplore([]);
     setWasReset(false);
     inputRef.current?.focus();
@@ -405,7 +406,6 @@ export default function Home() {
             flexDirection: "column",
             gap: "10px",
           }}>
-            {/* Type — structural, never auto-cleared */}
             <div>
               <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>Type</p>
               <div style={{ display: "flex", gap: "6px" }}>
@@ -415,7 +415,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Mood — intent filter, clears vibe + genre */}
             <div>
               <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>Mood</p>
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
@@ -425,7 +424,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Genre — intent filter, clears vibe + mood */}
             <div>
               <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
                 Genre <span style={{ color: "#222", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>→ scroll</span>
@@ -443,7 +441,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Time — intent filter, clears vibe */}
             <div>
               <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>Time</p>
               <div style={{ display: "flex", gap: "6px" }}>
@@ -453,7 +450,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Platform — structural, never auto-cleared */}
             <div>
               <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>
                 Platform <span style={{ color: "#222", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>→ scroll</span>
@@ -493,6 +489,36 @@ export default function Home() {
           <p style={{ fontSize: "10px", color: "#2a2a2a", textAlign: "center", margin: "-14px 0 14px", fontStyle: "italic" }}>
             Loading content...
           </p>
+        )}
+
+        {/* ── Empty state — no results for active filters ── */}
+        {noResults && (
+          <div style={{
+            background: "#111",
+            border: "1px solid #1e1e1e",
+            borderRadius: "16px",
+            padding: "20px 14px",
+            marginBottom: "12px",
+            textAlign: "center",
+          }}>
+            <p style={{ fontSize: "20px", margin: "0 0 8px" }}>🎬</p>
+            <p style={{ fontSize: "13px", color: "#888", margin: "0 0 4px", fontWeight: 500 }}>
+              No matches found
+            </p>
+            <p style={{ fontSize: "11px", color: "#444", margin: "0 0 12px" }}>
+              Try removing a filter or switching platform to Any
+            </p>
+            <button
+              onClick={handleTryAgain}
+              style={{
+                background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: "8px",
+                padding: "8px 16px", color: "#555", fontSize: "12px", cursor: "pointer",
+                fontFamily: "'DM Sans', system-ui, sans-serif",
+              }}
+            >
+              ↻ Try again
+            </button>
+          </div>
         )}
 
         {/* ── Results ── */}
