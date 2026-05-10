@@ -1,17 +1,14 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "../../../lib/supabase";
-import { entertainmentConfig, MOODS, TYPES, PLATFORMS, DOMAIN } from "../../../lib/domains/entertainment/config";
+import { entertainmentConfig, MOODS, TYPES, PLATFORMS, GENRES, DOMAIN } from "../../../lib/domains/entertainment/config";
 import { transformTMDbItem, enrichItems } from "../../../lib/domains/entertainment/enricher";
 import { runGroupEngine } from "../../../lib/engine/core";
-import { getTrustLabel } from "../../../lib/engine/scorer";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const TIMES = [["20-30", "20-30m"], ["1hr", "1 Hr"], ["2hr+", "2+ Hr"]];
-
-// filterKeys tells the group engine which participant columns to merge
-const FILTER_KEYS = ["mood", "time", "type", "platform"];
+const FILTER_KEYS = ["mood", "time", "type", "platform", "genre"];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -36,39 +33,30 @@ const pill = (active) => ({
 export default function GroupRoom({ params }) {
   const { sessionId } = React.use(params);
 
-  // ── Session + participants ──
   const [session, setSession] = useState(null);
   const [participants, setParticipants] = useState([]);
-
-  // ── My identity — set ONCE on join, persisted in localStorage ──
   const [myId, setMyId] = useState(null);
   const [isHost, setIsHost] = useState(false);
   const [joined, setJoined] = useState(false);
   const myIdRef = useRef(null);
   const isHostRef = useRef(false);
 
-  // ── Join form ──
   const [joinName, setJoinName] = useState("");
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
 
-  // ── Voting ──
   const [mood, setMood] = useState("");
   const [time, setTime] = useState("");
   const [type, setType] = useState("");
   const [platform, setPlatform] = useState("");
+  const [genre, setGenre] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // ── Deciding ──
   const [deciding, setDeciding] = useState(false);
   const [results, setResults] = useState([]);
-
-  // ── Content pool ──
   const [contentList, setContentList] = useState([]);
   const [contentReady, setContentReady] = useState(false);
-
-  // ── End session confirm ──
   const [showEndConfirm, setShowEndConfirm] = useState(false);
 
   // ─── INIT ─────────────────────────────────────────────────────────────────
@@ -141,7 +129,6 @@ export default function GroupRoom({ params }) {
   };
 
   // ─── FETCH CONTENT ────────────────────────────────────────────────────────
-  // Uses transformTMDbItem from enricher — same transform as solo engine.
 
   const fetchContent = async () => {
     const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
@@ -157,7 +144,6 @@ export default function GroupRoom({ params }) {
         ...(d1.results || []), ...(d2.results || []),
         ...(d3.results || []), ...(d4.results || []),
       ];
-      // ✅ transformTMDbItem — shared with solo engine, single source of truth
       setContentList(all.slice(0, 120).map(transformTMDbItem));
     } catch { }
     setContentReady(true);
@@ -233,7 +219,7 @@ export default function GroupRoom({ params }) {
     if (!pid) return;
     setSubmitting(true);
     const { error } = await supabase.from("participants")
-      .update({ mood, time, type, platform }).eq("id", pid);
+      .update({ mood, time, type, platform, genre }).eq("id", pid);
     if (!error) setSubmitted(true);
     setSubmitting(false);
   };
@@ -245,7 +231,6 @@ export default function GroupRoom({ params }) {
   };
 
   // ─── DECIDE ───────────────────────────────────────────────────────────────
-  // ✅ Now uses runGroupEngine from core.js — no inline scoring logic.
 
   const handleDecide = async () => {
     if (!contentReady || !contentList.length) return;
@@ -268,19 +253,16 @@ export default function GroupRoom({ params }) {
 
     const { topPick, backups, trustLabel, mergedFilters, wasFallback } = result;
 
-    // Build top3 with trustLabel attached — same shape as solo engine output
     const top3 = [topPick, ...backups]
       .filter(Boolean)
       .map((item) => ({ ...item, trustLabel }));
 
-    // Persist to Supabase — all participants see the result via Realtime
     await supabase.from("sessions")
       .update({ status: "decided", final_pick: JSON.stringify(top3) })
       .eq("id", sessionId);
 
     setResults(top3);
 
-    // Log event
     try {
       await supabase.from("events").insert({
         mode: "group",
@@ -305,9 +287,9 @@ export default function GroupRoom({ params }) {
 
   // ─── DERIVED ──────────────────────────────────────────────────────────────
 
-  const submittedCount = participants.filter((p) => p.mood || p.type || p.time || p.platform).length;
+  const submittedCount = participants.filter((p) => p.mood || p.type || p.time || p.platform || p.genre).length;
   const allSubmitted = participants.length >= 2 && submittedCount === participants.length;
-  const voteActive = mood || time || type || platform;
+  const voteActive = mood || time || type || platform || genre;
   const hostSlotEmpty = session && !session.host_participant_id;
 
   // ─── LOADING ──────────────────────────────────────────────────────────────
@@ -359,9 +341,7 @@ export default function GroupRoom({ params }) {
           </h1>
         </div>
 
-        {/* ════════════════════════════════════════════════
-            STATE: WAITING + NOT JOINED
-        ════════════════════════════════════════════════ */}
+        {/* ════════════════ STATE: WAITING + NOT JOINED ════════════════ */}
         {!joined && session.status === "waiting" && (
           <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: "14px", padding: "16px", marginBottom: "12px" }}>
             {hostSlotEmpty ? (
@@ -396,16 +376,13 @@ export default function GroupRoom({ params }) {
           </div>
         )}
 
-        {/* ════════════════════════════════════════════════
-            STATE: WAITING + JOINED AS HOST
-        ════════════════════════════════════════════════ */}
+        {/* ════════════════ STATE: WAITING + HOST ════════════════ */}
         {joined && isHost && session.status === "waiting" && (
           <>
             <div style={{ background: "#0d1a0d", border: "1px solid #1e3a1e", borderRadius: "10px", padding: "8px 12px", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ fontSize: "13px" }}>👑</span>
               <p style={{ fontSize: "11px", color: "#4caf50", margin: 0 }}>You are the host. Share the link to invite others.</p>
             </div>
-
             <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: "14px", padding: "14px", marginBottom: "12px" }}>
               <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 8px" }}>Share this link</p>
               <div style={{ background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: "10px", padding: "10px 12px", marginBottom: "10px" }}>
@@ -417,7 +394,6 @@ export default function GroupRoom({ params }) {
                 📋 Copy / Share link
               </button>
             </div>
-
             <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: "14px", padding: "14px", marginBottom: "12px" }}>
               <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 10px" }}>Who's here ({participants.length})</p>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -433,7 +409,6 @@ export default function GroupRoom({ params }) {
                 ))}
               </div>
             </div>
-
             <button
               onClick={handleStartVoting}
               disabled={participants.length < 2}
@@ -444,9 +419,7 @@ export default function GroupRoom({ params }) {
           </>
         )}
 
-        {/* ════════════════════════════════════════════════
-            STATE: WAITING + JOINED AS PARTICIPANT
-        ════════════════════════════════════════════════ */}
+        {/* ════════════════ STATE: WAITING + PARTICIPANT ════════════════ */}
         {joined && !isHost && session.status === "waiting" && (
           <>
             <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: "14px", padding: "16px 14px", marginBottom: "12px", textAlign: "center" }}>
@@ -472,9 +445,7 @@ export default function GroupRoom({ params }) {
           </>
         )}
 
-        {/* ════════════════════════════════════════════════
-            STATE: VOTING
-        ════════════════════════════════════════════════ */}
+        {/* ════════════════ STATE: VOTING ════════════════ */}
         {joined && session.status === "voting" && (
           <>
             {!submitted ? (
@@ -491,7 +462,22 @@ export default function GroupRoom({ params }) {
                 <div style={{ marginBottom: "12px" }}>
                   <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 6px" }}>Mood</p>
                   <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                    {MOODS.map((m) => <button key={m} onClick={() => setMood(mood === m ? "" : m)} style={pill(mood === m)}>{m}</button>)}
+                    {MOODS.map((m) => <button key={m} onClick={() => { setGenre(null); setMood(mood === m ? "" : m); }} style={pill(mood === m)}>{m}</button>)}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: "12px" }}>
+                  <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 6px" }}>Genre</p>
+                  <div style={{ display: "flex", gap: "5px", overflowX: "auto", paddingBottom: "2px", scrollbarWidth: "none" }}>
+                    {GENRES.map((g) => (
+                      <button
+                        key={g.id}
+                        onClick={() => { setMood(""); setGenre(genre === String(g.id) ? null : String(g.id)); }}
+                        style={{ ...pill(genre === String(g.id)), flexShrink: 0, fontSize: "11px", padding: "3px 10px" }}
+                      >
+                        {g.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -531,7 +517,7 @@ export default function GroupRoom({ params }) {
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {participants.map((p) => {
-                  const voted = p.mood || p.type || p.time || p.platform;
+                  const voted = p.mood || p.type || p.time || p.platform || p.genre;
                   return (
                     <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <p style={{ fontSize: "13px", color: "#666", margin: 0 }}>
@@ -557,9 +543,7 @@ export default function GroupRoom({ params }) {
           </>
         )}
 
-        {/* ════════════════════════════════════════════════
-            STATE: DECIDED
-        ════════════════════════════════════════════════ */}
+        {/* ════════════════ STATE: DECIDED ════════════════ */}
         {session.status === "decided" && results.length > 0 && (
           <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: "16px", padding: "14px" }}>
             <p style={{ fontSize: "9px", color: "#4caf50", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 12px" }}>Your group's pick</p>
@@ -601,9 +585,7 @@ export default function GroupRoom({ params }) {
           </div>
         )}
 
-        {/* ════════════════════════════════════════════════
-            STATE: ENDED
-        ════════════════════════════════════════════════ */}
+        {/* ════════════════ STATE: ENDED ════════════════ */}
         {session.status === "ended" && (
           <div style={{ textAlign: "center", padding: "24px 0" }}>
             <p style={{ fontSize: "13px", color: "#444", margin: "0 0 16px" }}>This session has ended.</p>
