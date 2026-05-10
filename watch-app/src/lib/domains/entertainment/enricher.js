@@ -1,9 +1,13 @@
 // ─── Entertainment Domain: Enricher ──────────────────────────────────────────
 // Lazy fetches runtime + platform for a list of items from TMDb.
 // Called only for top candidates — never on full pool load.
-// Caches results back into items to avoid repeat fetches.
+// Supabase content_cache used to avoid repeat TMDb calls (7-day expiry).
 
 import { getTimeBucket } from "./config.js";
+import { supabase } from "../../supabase.js";
+
+const DOMAIN = "entertainment";
+const CACHE_TTL_DAYS = 7;
 
 // ─── Platform normalizer ──────────────────────────────────────────────────────
 
@@ -19,14 +23,6 @@ export function normalizePlatform(name) {
 
 // ─── Single item fetchers ─────────────────────────────────────────────────────
 
-/**
- * Fetch runtime for a single item from TMDb.
- *
- * @param {string|number} id
- * @param {string} mediaType  - "movie" or "tv"
- * @param {string} apiKey
- * @returns {Promise<string>} time bucket: "20-30" | "1hr" | "2hr+"
- */
 export async function fetchRuntime(id, mediaType, apiKey) {
   try {
     const res = await fetch(
@@ -42,14 +38,6 @@ export async function fetchRuntime(id, mediaType, apiKey) {
   }
 }
 
-/**
- * Fetch streaming platform for a single item from TMDb (India region).
- *
- * @param {string|number} id
- * @param {string} mediaType
- * @param {string} apiKey
- * @returns {Promise<string>} normalized platform name
- */
 export async function fetchPlatform(id, mediaType, apiKey) {
   try {
     const res = await fetch(
@@ -64,30 +52,70 @@ export async function fetchPlatform(id, mediaType, apiKey) {
   }
 }
 
+// ─── Supabase cache helpers ───────────────────────────────────────────────────
+
+async function getFromCache(itemId) {
+  try {
+    const { data, error } = await supabase
+      .from("content_cache")
+      .select("item_data")
+      .eq("domain", DOMAIN)
+      .eq("item_id", String(itemId))
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return data.item_data; // { time, platform }
+  } catch {
+    return null;
+  }
+}
+
+async function writeToCache(itemId, itemData) {
+  try {
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + CACHE_TTL_DAYS);
+
+    await supabase.from("content_cache").upsert(
+      {
+        domain:     DOMAIN,
+        item_id:    String(itemId),
+        item_data:  itemData,
+        expires_at: expiresAt.toISOString(),
+        created_at: new Date().toISOString(),
+      },
+      { onConflict: "domain,item_id" }
+    );
+  } catch {
+    // Cache write failure is non-fatal — TMDb data already used
+  }
+}
+
 // ─── Batch enricher ───────────────────────────────────────────────────────────
 
-/**
- * Enrich a list of items with runtime + platform.
- * Skips items that are already enriched (time + platform not null).
- * Fetches runtime and platform in parallel per item.
- *
- * @param {Array}  items   - Items to enrich
- * @param {string} apiKey  - TMDb API key
- * @returns {Promise<Array>} enriched items
- */
 export async function enrichItems(items, apiKey) {
   return Promise.all(
     items.map(async (item) => {
-      // Skip if already enriched — use cached values
       const needsRuntime  = item.time === null || item.time === undefined;
       const needsPlatform = item.platform === null || item.platform === undefined;
 
+      // Already enriched in memory — skip everything
       if (!needsRuntime && !needsPlatform) return item;
 
+      // ── Check Supabase cache ──
+      const cached = await getFromCache(item.id);
+      if (cached?.time && cached?.platform) {
+        return { ...item, time: cached.time, platform: cached.platform };
+      }
+
+      // ── Cache miss — fetch from TMDb ──
       const [runtime, platform] = await Promise.all([
         needsRuntime  ? fetchRuntime(item.id, item.mediaType, apiKey)  : Promise.resolve(item.time),
         needsPlatform ? fetchPlatform(item.id, item.mediaType, apiKey) : Promise.resolve(item.platform),
       ]);
+
+      // ── Write to Supabase cache (non-blocking) ──
+      writeToCache(item.id, { time: runtime, platform });
 
       return { ...item, time: runtime, platform };
     })
@@ -96,13 +124,6 @@ export async function enrichItems(items, apiKey) {
 
 // ─── Transform ────────────────────────────────────────────────────────────────
 
-/**
- * Transform raw TMDb API item into engine-ready format.
- * time and platform are null — enriched lazily on pick.
- *
- * @param {Object} item  - Raw TMDb item
- * @returns {Object} engine item
- */
 export function transformTMDbItem(item) {
   return {
     id:         item.id,
@@ -116,7 +137,7 @@ export function transformTMDbItem(item) {
     voteCount:  item.vote_count  || 0,
     type:       item.title ? "Movie" : "Series",
     genres:     item.genre_ids   || [],
-    time:       null,     // enriched lazily
-    platform:   null,     // enriched lazily
+    time:       null,
+    platform:   null,
   };
 }
