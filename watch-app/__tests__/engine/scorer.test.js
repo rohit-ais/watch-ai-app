@@ -57,10 +57,16 @@ describe('fullScore', () => {
     expect(score).toBe(5) // genre(4) + highRating(1)
   })
 
-  test('no filters — only quality boost counts', () => {
+  test('no filters + vague — quality boost including popular', () => {
     const item = { genres: [28], rating: 8, voteCount: 15000, popularity: 80 }
-    const score = fullScore(item, {}, weights, moodGenreMap, qualityThresholds, 50)
+    const score = fullScore(item, {}, weights, moodGenreMap, qualityThresholds, 50, true)
     expect(score).toBe(3) // highRating(1) + highVotes(1) + popular(1)
+  })
+
+  test('no filters + not vague — popular boost not applied', () => {
+    const item = { genres: [28], rating: 8, voteCount: 15000, popularity: 80 }
+    const score = fullScore(item, {}, weights, moodGenreMap, qualityThresholds, 50, false)
+    expect(score).toBe(2) // highRating(1) + highVotes(1) only
   })
 })
 

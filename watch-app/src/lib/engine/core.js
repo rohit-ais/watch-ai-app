@@ -142,11 +142,12 @@ export async function runSoloEngine({
   if (!enriched || enriched.length === 0) enriched = shuffled;
 
   // ── Step 9: Full score with enriched data ──
+  // ── Step 9: Full score with enriched data ──
   const fullScored = enriched
     .filter(Boolean)
     .map((item) => ({
       ...item,
-      score: fullScore(item, filters, weights, moodGenreMap, qualityThresholds, popularityP80),
+      score: fullScore(item, filters, weights, moodGenreMap, qualityThresholds, popularityP80, vague),
       maxPossible,
     }));
 
@@ -299,7 +300,7 @@ export async function runGroupEngine({
     .filter(Boolean)
     .map((item) => ({
       ...item,
-      score: fullScore(item, mergedFilters, weights, moodGenreMap, qualityThresholds, popularityP80),
+      score: fullScore(item, mergedFilters, weights, moodGenreMap, qualityThresholds, popularityP80, false),
       maxPossible,
     }));
 

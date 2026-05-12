@@ -48,7 +48,7 @@ export function preScore(item, activeFilters, weights, moodGenreMap) {
  * @param {number} popularityP80      - 80th percentile popularity in current pool
  * @returns {number} full score
  */
-export function fullScore(item, activeFilters, weights, moodGenreMap, qualityThresholds, popularityP80) {
+export function fullScore(item, activeFilters, weights, moodGenreMap, qualityThresholds, popularityP80, isVague = false) {
   let score = 0;
 
   // ── Primary intent scores ──
@@ -80,7 +80,7 @@ export function fullScore(item, activeFilters, weights, moodGenreMap, qualityThr
     if (item.voteCount && item.voteCount >= qualityThresholds.votes) {
       score += weights.highVotes || 0;
     }
-    if (popularityP80 && item.popularity && item.popularity >= popularityP80) {
+    if (isVague && popularityP80 && item.popularity && item.popularity >= popularityP80) {
       score += weights.popular || 0;
     }
   }

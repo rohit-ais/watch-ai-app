@@ -22,14 +22,16 @@ export const GENRE_TO_MOOD = {
   35:    "Fun",      // Comedy
   12:    "Fun",      // Adventure
   14:    "Fun",      // Fantasy
-  10751: "Fun",      // Family
-  16:    "Fun",      // Animation
+  10751: "Fun",      // Family — also Relax via MULTI_MOOD_GENRES
+  16:    "Fun",      // Animation — also Relax via MULTI_MOOD_GENRES
+  10759: "Fun",      // Action & Adventure (TV)
 
   // Relax
   99:    "Relax",    // Documentary
   10402: "Relax",    // Music
   10770: "Relax",    // TV Movie
-  // 10751 and 16 also map to Relax — handled via multi-mood logic below
+  10764: "Relax",    // Reality
+  10767: "Relax",    // Talk
 
   // Intense
   28:    "Intense",  // Action
@@ -37,10 +39,9 @@ export const GENRE_TO_MOOD = {
   53:    "Intense",  // Thriller
   27:    "Intense",  // Horror
   9648:  "Intense",  // Mystery
-  878:   "Intense",  // Science Fiction
+  878:   "Intense",  // Science Fiction — also Fun via MULTI_MOOD_GENRES
   10752: "Intense",  // War
-  10759: "Intense",  // Action & Adventure (TV)
-  10765: "Intense",  // Sci-Fi & Fantasy (TV)
+  10765: "Intense",  // Sci-Fi & Fantasy (TV) — also Fun via MULTI_MOOD_GENRES
   10768: "Intense",  // War & Politics (TV)
 
   // Emotional
@@ -52,19 +53,17 @@ export const GENRE_TO_MOOD = {
 
   // TV-specific
   10762: "Fun",      // Kids
-  10764: "Relax",    // Reality
-  10767: "Relax",    // Talk
 };
 
 // Genres that map to multiple moods
 export const MULTI_MOOD_GENRES = {
-  10751: ["Fun", "Relax"],  // Family
-  16:    ["Fun", "Relax"],  // Animation
+  10751: ["Fun", "Relax"],      // Family
+  16:    ["Fun", "Relax"],      // Animation
+  878:   ["Intense", "Fun"],    // Science Fiction
+  10765: ["Intense", "Fun"],    // Sci-Fi & Fantasy (TV)
 };
 
 // ─── Genres (user-facing filter) ─────────────────────────────────────────────
-// These are the genres shown in the UI filter panel.
-// genre ID → display label
 
 export const GENRES = [
   { id: 28,    label: "Action"       },
@@ -109,21 +108,20 @@ export function getTimeBucket(mins) {
 }
 
 // ─── Scoring weights ─────────────────────────────────────────────────────────
-// Primary intent scores — what user selected today
 
 export const WEIGHTS = {
-  genre:      4,  // genre match (hard if genre selected, soft via mood mapping)
+  genre:      4,  // genre match
   mood:       3,  // mood match
   time:       2,  // time bucket match
 
   // Quality boost — silent signals, never override intent
   highRating: 1,  // rating > QUALITY_THRESHOLDS.rating
   highVotes:  1,  // voteCount > QUALITY_THRESHOLDS.votes
-  popular:    1,  // popularity > QUALITY_THRESHOLDS.popularity (top 20%)
+  popular:    1,  // popularity > p80 — only applied in vague mode
 
   // Penalty
-  conflict:   2,  // group conflict penalty per mismatched participant
-  recent:     1,  // recently shown penalty (applied via seen logic)
+  conflict:   3,  // group conflict penalty per mismatched participant
+  recent:     1,  // recently shown penalty
 };
 
 // ─── Quality thresholds ───────────────────────────────────────────────────────
@@ -131,53 +129,46 @@ export const WEIGHTS = {
 export const QUALITY_THRESHOLDS = {
   rating:     7.5,   // minimum rating for +1 quality boost
   votes:      10000, // minimum vote count for +1 quality boost
-  popularity: 100,   // minimum popularity score for +1 boost (TMDb scale)
+  popularity: 200,   // tightened — filters out low-signal trending content
 };
 
 // ─── Hard filter rules ────────────────────────────────────────────────────────
-// Defines which filters are hard blockers (remove item if no match)
-// vs soft scored (keep item, just score lower)
 
 export const HARD_FILTER_RULES = {
-  type:     true,   // type mismatch → remove
-  platform: true,   // platform mismatch → remove (if platform !== "Any")
-  genre:    true,   // genre mismatch → remove (if genre explicitly selected)
-  mood:     false,  // mood mismatch → score lower, don't remove
-  time:     false,  // time mismatch → score lower, don't remove
+  type:     true,
+  platform: true,
+  genre:    true,
+  mood:     false,
+  time:     false,
 };
 
 // ─── Trust label thresholds ───────────────────────────────────────────────────
-// Maps score percentage to trust label shown on result card
 
 export const TRUST_THRESHOLDS = [
-  { min: 100, label: "⚡ Perfect Match"      },
-  { min: 75,  label: "👍 Strong Match"       },
-  { min: 50,  label: "🙂 Good Match"         },
-  { min: 1,   label: "🎲 Best Available"     },
-  { min: 0,   label: "🎬 Recommended for you"},
+  { min: 100, label: "⚡ Perfect Match"       },
+  { min: 75,  label: "👍 Strong Match"        },
+  { min: 50,  label: "🙂 Good Match"          },
+  { min: 1,   label: "🎲 Best Available"      },
+  { min: 0,   label: "🎬 Recommended for you" },
 ];
 
 // ─── Group conflict threshold ─────────────────────────────────────────────────
-// If a participant's match % is below this, apply conflict penalty
 
-export const CONFLICT_THRESHOLD = 0.30; // 30%
+export const CONFLICT_THRESHOLD = 0.30;
 
 // ─── Vague request detection ──────────────────────────────────────────────────
-// If no filters selected AND vibe word count <= this → treat as vague request
-// Vague = use popularity + rating as primary signal
 
 export const VAGUE_WORD_THRESHOLD = 3;
 
 // ─── Candidate pool size ──────────────────────────────────────────────────────
-// How many items to enrich before full scoring
 
 export const CANDIDATE_POOL_SIZE = 20;
 
 // ─── Domain identifier ────────────────────────────────────────────────────────
 
 export const DOMAIN = "entertainment";
+
 // ─── Assembled config object ──────────────────────────────────────────────────
-// Passed directly to core engine functions.
 
 export const entertainmentConfig = {
   weights:            WEIGHTS,
