@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabase";
 
 export default function GroupPage() {
   const [loading, setLoading] = useState(false);
+  const [kidsMode, setKidsMode] = useState(false);
   const [error, setError] = useState("");
 
   const handleCreate = async () => {
@@ -12,7 +13,7 @@ export default function GroupPage() {
     try {
       const { data: session, error: sErr } = await supabase
         .from("sessions")
-        .insert({ mode: "group", status: "waiting" })
+        .insert({ mode: "group", status: "waiting", kids_mode: kidsMode })
         .select()
         .single();
       if (sErr) throw sErr;
@@ -49,6 +50,19 @@ export default function GroupPage() {
               <p style={{ fontSize: "11px", color: "#3a5a3a", margin: 0, lineHeight: 1.4 }}>{step}</p>
             </div>
           ))}
+        </div>
+
+        <div
+          onClick={() => setKidsMode((k) => !k)}
+          style={{ background: kidsMode ? "#0d1a0d" : "#111", border: `1px solid ${kidsMode ? "#1e3a1e" : "#1e1e1e"}`, borderRadius: "12px", padding: "12px 14px", marginBottom: "16px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", transition: "all 0.2s" }}
+        >
+          <div>
+            <p style={{ fontSize: "12px", color: kidsMode ? "#4caf50" : "#555", margin: "0 0 2px", fontWeight: 500 }}>👶 Kids Mode</p>
+            <p style={{ fontSize: "10px", color: kidsMode ? "#3a5a3a" : "#333", margin: 0 }}>Hides intense, horror and adult content</p>
+          </div>
+          <div style={{ width: "32px", height: "18px", borderRadius: "9px", background: kidsMode ? "#4caf50" : "#222", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
+            <div style={{ position: "absolute", top: "3px", left: kidsMode ? "17px" : "3px", width: "12px", height: "12px", borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
+          </div>
         </div>
 
         {error && <p style={{ fontSize: "11px", color: "#e53935", margin: "0 0 12px" }}>{error}</p>}

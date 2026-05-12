@@ -107,3 +107,66 @@ describe('applyMinScoreFilter', () => {
     expect(applyMinScoreFilter(scored, 0)).toHaveLength(3)
   })
 })
+
+// ─── applyKidsModeFilter ──────────────────────────────────────────────────────
+
+import { applyKidsModeFilter } from '../../src/lib/engine/filters.js'
+
+const kidsItems = [
+  { id: 1, name: 'Safe Movie',    type: 'Movie', genres: [28],    certification: 'PG' },
+  { id: 2, name: 'Horror Film',   type: 'Movie', genres: [27],    certification: 'R' },
+  { id: 3, name: 'Thriller Show', type: 'Series', genres: [53],   certification: null },
+  { id: 4, name: 'Crime Drama',   type: 'Series', genres: [80],   certification: null },
+  { id: 5, name: 'War Film',      type: 'Movie', genres: [10752], certification: null },
+  { id: 6, name: 'Rated R Clean', type: 'Movie', genres: [28],    certification: 'R' },
+  { id: 7, name: 'Rated A',       type: 'Movie', genres: [28],    certification: 'A' },
+  { id: 8, name: 'Rated 18+',     type: 'Movie', genres: [28],    certification: '18+' },
+  { id: 9, name: 'No Cert Safe',  type: 'Movie', genres: [28],    certification: null },
+]
+
+describe('applyKidsModeFilter', () => {
+  test('blocks Horror (genre 27)', () => {
+    const result = applyKidsModeFilter(kidsItems)
+    expect(result.map(i => i.name)).not.toContain('Horror Film')
+  })
+
+  test('blocks Thriller (genre 53)', () => {
+    const result = applyKidsModeFilter(kidsItems)
+    expect(result.map(i => i.name)).not.toContain('Thriller Show')
+  })
+
+  test('blocks Crime (genre 80)', () => {
+    const result = applyKidsModeFilter(kidsItems)
+    expect(result.map(i => i.name)).not.toContain('Crime Drama')
+  })
+
+  test('blocks War (genre 10752)', () => {
+    const result = applyKidsModeFilter(kidsItems)
+    expect(result.map(i => i.name)).not.toContain('War Film')
+  })
+
+  test('blocks certification R', () => {
+    const result = applyKidsModeFilter(kidsItems)
+    expect(result.map(i => i.name)).not.toContain('Rated R Clean')
+  })
+
+  test('blocks certification A', () => {
+    const result = applyKidsModeFilter(kidsItems)
+    expect(result.map(i => i.name)).not.toContain('Rated A')
+  })
+
+  test('blocks certification 18+', () => {
+    const result = applyKidsModeFilter(kidsItems)
+    expect(result.map(i => i.name)).not.toContain('Rated 18+')
+  })
+
+  test('allows safe item — no blocked genre, no blocked cert', () => {
+    const result = applyKidsModeFilter(kidsItems)
+    expect(result.map(i => i.name)).toContain('Safe Movie')
+  })
+
+  test('allows item with null certification and safe genre', () => {
+    const result = applyKidsModeFilter(kidsItems)
+    expect(result.map(i => i.name)).toContain('No Cert Safe')
+  })
+})

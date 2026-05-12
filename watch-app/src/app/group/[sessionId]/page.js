@@ -53,6 +53,7 @@ export default function GroupRoom({ params }) {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const [kidsMode, setKidsMode] = useState(false);
   const [deciding, setDeciding] = useState(false);
   const [results, setResults] = useState([]);
   const [contentList, setContentList] = useState([]);
@@ -113,6 +114,7 @@ export default function GroupRoom({ params }) {
       .from("sessions").select("*").eq("id", sessionId).single();
     if (data) {
       setSession(data);
+      setKidsMode(!!data.kids_mode);
       if (data.status === "decided" && data.final_pick) {
         try { setResults(JSON.parse(data.final_pick)); } catch { }
       }
@@ -249,6 +251,7 @@ export default function GroupRoom({ params }) {
       config: entertainmentConfig,
       enricher: enrichItems,
       apiKey,
+      kidsMode,
     });
 
     const { topPick, backups, trustLabel, mergedFilters, wasFallback } = result;
@@ -462,14 +465,14 @@ export default function GroupRoom({ params }) {
                 <div style={{ marginBottom: "12px" }}>
                   <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 6px" }}>Mood</p>
                   <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                    {MOODS.map((m) => <button key={m} onClick={() => { setGenre(null); setMood(mood === m ? "" : m); }} style={pill(mood === m)}>{m}</button>)}
+                    {MOODS.filter((m) => !(kidsMode && m === "Intense")).map((m) => <button key={m} onClick={() => { setGenre(null); setMood(mood === m ? "" : m); }} style={pill(mood === m)}>{m}</button>)}
                   </div>
                 </div>
 
                 <div style={{ marginBottom: "12px" }}>
                   <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 6px" }}>Genre</p>
                   <div style={{ display: "flex", gap: "5px", overflowX: "auto", paddingBottom: "2px", scrollbarWidth: "none" }}>
-                    {GENRES.map((g) => (
+                    {GENRES.filter((g) => !(kidsMode && [27, 53, 80, 10752].includes(g.id))).map((g) => (
                       <button
                         key={g.id}
                         onClick={() => { setMood(""); setGenre(genre === String(g.id) ? null : String(g.id)); }}

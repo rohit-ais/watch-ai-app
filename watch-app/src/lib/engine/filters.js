@@ -94,3 +94,23 @@ export function applyMinScoreFilter(items, maxPossible) {
   if (maxPossible === 0) return items; // no filters active — keep all
   return items.filter((item) => item.score > 0);
 }
+
+// ─── Kids Mode Filter ─────────────────────────────────────────────────────────
+// Hard blocks genres + certifications inappropriate for children.
+// Called by core.js immediately after applyHardFilters when kidsMode = true.
+
+const KIDS_BLOCKED_GENRES = [27, 53, 80, 10752]; // Horror, Thriller, Crime, War
+const KIDS_BLOCKED_CERTS = ["R", "A", "18+"];
+
+/**
+ * Remove items that contain blocked genres or certifications.
+ * @param {Array} items
+ * @returns {Array}
+ */
+export function applyKidsModeFilter(items) {
+  return items.filter((item) => {
+    if (item.genres?.some((g) => KIDS_BLOCKED_GENRES.includes(g))) return false;
+    if (item.certification && KIDS_BLOCKED_CERTS.includes(item.certification)) return false;
+    return true;
+  });
+}

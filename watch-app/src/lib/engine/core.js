@@ -5,6 +5,7 @@
 
 import {
   applyHardFilters,
+  applyKidsModeFilter,
   applySeenFilter,
   applyMinScoreFilter,
   isVagueRequest,
@@ -59,6 +60,7 @@ export async function runSoloEngine({
   enricher,
   apiKey,
   seenTracker,
+  kidsMode = false,
 }) {
   const {
     weights,
@@ -76,22 +78,26 @@ export async function runSoloEngine({
   // what caused Series to leak when Movie was the selected type.
   const hardFiltered = applyHardFilters(items, filters, hardFilterRules);
 
+  // ── Step 1.5: Kids mode filter ──
+  // Removes blocked genres (Horror/Thriller/Crime/War) + blocked certs (R/A/18+).
+  // Applied after hard filters so it operates on an already type+genre safe pool.
+  const kidsFiltered = kidsMode ? applyKidsModeFilter(hardFiltered) : hardFiltered;
+
   // ── Step 2: Remove seen items ──
   const seen = seenTracker.getSeen();
-  let withoutSeen = applySeenFilter(hardFiltered, seen);
+  let withoutSeen = applySeenFilter(kidsFiltered, seen);
 
   // ── Step 3: Handle pool exhaustion ──
-  // FIX: on exhaustion, reset seen and reuse hardFiltered — never raw items.
-  // hardFiltered is already type+genre safe. Using raw items here was the
-  // primary cause of Series leaking on the 3rd pick.
+  // FIX: on exhaustion, reset seen and reuse kidsFiltered — never raw items.
+  // kidsFiltered is already type+genre+kids safe.
   let wasReset = false;
   if (withoutSeen.length === 0) {
     seenTracker.clearSeen();
     wasReset = seen.length > 0;
-    withoutSeen = [...hardFiltered];
+    withoutSeen = [...kidsFiltered];
   }
 
-  // Edge case: hardFiltered itself is empty (filter combo returns nothing).
+  // Edge case: kidsFiltered itself is empty (filter combo returns nothing).
   // Return empty result — do not breach type/genre to find something.
   if (withoutSeen.length === 0) {
     return {
@@ -141,7 +147,6 @@ export async function runSoloEngine({
   // Guard: if enrichment returned empty, use shuffled as-is
   if (!enriched || enriched.length === 0) enriched = shuffled;
 
-  // ── Step 9: Full score with enriched data ──
   // ── Step 9: Full score with enriched data ──
   const fullScored = enriched
     .filter(Boolean)
@@ -242,6 +247,7 @@ export async function runGroupEngine({
   config,
   enricher,
   apiKey,
+  kidsMode = false,
 }) {
   const {
     weights,
@@ -260,8 +266,12 @@ export async function runGroupEngine({
   // FIX: same as solo — never fall back to raw items if hardFiltered is empty.
   const hardFiltered = applyHardFilters(items, mergedFilters, hardFilterRules);
 
+  // ── Step 1.5: Kids mode filter ──
+  // Applied after hard filters — removes blocked genres + certifications.
+  const kidsFiltered = kidsMode ? applyKidsModeFilter(hardFiltered) : hardFiltered;
+
   // Edge case: no items pass hard filters — return empty result.
-  if (hardFiltered.length === 0) {
+  if (kidsFiltered.length === 0) {
     return {
       topPick: null, backups: [], trustLabel: "",
       mergedFilters, wasFallback: true, maxPossible: 0,
@@ -271,9 +281,9 @@ export async function runGroupEngine({
 
   // ── Step 3: Pre-score ──
   const maxPossible = calcMaxPossible(mergedFilters, weights);
-  const popularityP80 = calcPopularityP80(hardFiltered);
+  const popularityP80 = calcPopularityP80(kidsFiltered);
 
-  const preScored = hardFiltered.map((item) => ({
+  const preScored = kidsFiltered.map((item) => ({
     ...item,
     score: preScore(item, mergedFilters, weights, moodGenreMap),
   }));
