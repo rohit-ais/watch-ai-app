@@ -135,18 +135,27 @@ export default function GroupRoom({ params }) {
   const fetchContent = async () => {
     const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
     try {
-      const [r1, r2, r3, r4] = await Promise.all([
+      const [r1, r2, r3, r4, r5, r6, r7, r8] = await Promise.all([
         fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&page=1`),
+        fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&page=2`),
         fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${apiKey}&page=1`),
+        fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${apiKey}&page=2`),
         fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${apiKey}&page=1`),
+        fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${apiKey}&page=2`),
         fetch(`https://api.themoviedb.org/3/tv/top_rated?api_key=${apiKey}&page=1`),
+        fetch(`https://api.themoviedb.org/3/tv/top_rated?api_key=${apiKey}&page=2`),
       ]);
-      const [d1, d2, d3, d4] = await Promise.all([r1.json(), r2.json(), r3.json(), r4.json()]);
+      const [d1, d2, d3, d4, d5, d6, d7, d8] = await Promise.all([
+        r1.json(), r2.json(), r3.json(), r4.json(),
+        r5.json(), r6.json(), r7.json(), r8.json(),
+      ]);
       const all = [
         ...(d1.results || []), ...(d2.results || []),
         ...(d3.results || []), ...(d4.results || []),
+        ...(d5.results || []), ...(d6.results || []),
+        ...(d7.results || []), ...(d8.results || []),
       ];
-      setContentList(all.slice(0, 120).map(transformTMDbItem));
+      setContentList(all.map(transformTMDbItem));
     } catch { }
     setContentReady(true);
   };

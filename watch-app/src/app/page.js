@@ -178,7 +178,7 @@ export default function Home() {
       } catch { combined = []; }
     }
 
-    const transformed = combined.slice(0, 120).map(transformTMDbItem);
+    const transformed = combined.map(transformTMDbItem);
     setContentList(transformed);
     setAppReady(true);
   };
