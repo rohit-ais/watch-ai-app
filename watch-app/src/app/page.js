@@ -639,32 +639,6 @@ export default function Home() {
             </svg>
           </button>
 
-          <button
-            onClick={() => window.location.href = "/family"}
-            style={{
-              background: "#111", border: "1px solid #1a1a1a", borderRadius: "14px",
-              padding: "13px 14px", display: "flex", alignItems: "center", justifyContent: "space-between",
-              cursor: "pointer", width: "100%", textAlign: "left",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div style={{ width: "32px", height: "32px", background: "#0f0d1f", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
-                  <circle cx="8" cy="4.5" r="2.5" stroke="#7c6af5" strokeWidth="1.5" />
-                  <path d="M4 13c0-2.2 1.8-4 4-4s4 1.8 4 4" stroke="#7c6af5" strokeWidth="1.5" strokeLinecap="round" />
-                  <circle cx="12.5" cy="6" r="1.5" stroke="#7c6af5" strokeWidth="1.2" />
-                </svg>
-              </div>
-              <div>
-                <p style={{ fontSize: "13px", fontWeight: 500, color: "#fff", margin: 0 }}>Family mode</p>
-                <p style={{ fontSize: "10px", color: "#444", margin: 0 }}>Parent sets rules, kid picks mood</p>
-              </div>
-            </div>
-            <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
-              <path d="M5 3l4 4-4 4" stroke="#333" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </button>
-
         </div>
       </div>
     </main>
