@@ -133,17 +133,16 @@ export default function GroupRoom({ params }) {
   // ─── FETCH CONTENT ────────────────────────────────────────────────────────
 
   const fetchContent = async () => {
-    const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
     try {
       const [r1, r2, r3, r4, r5, r6, r7, r8] = await Promise.all([
-        fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&page=1`),
-        fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&page=2`),
-        fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${apiKey}&page=1`),
-        fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${apiKey}&page=2`),
-        fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${apiKey}&page=1`),
-        fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${apiKey}&page=2`),
-        fetch(`https://api.themoviedb.org/3/tv/top_rated?api_key=${apiKey}&page=1`),
-        fetch(`https://api.themoviedb.org/3/tv/top_rated?api_key=${apiKey}&page=2`),
+        fetch(`/api/tmdb?path=/movie/popular&page=1`),
+        fetch(`/api/tmdb?path=/movie/popular&page=2`),
+        fetch(`/api/tmdb?path=/movie/top_rated&page=1`),
+        fetch(`/api/tmdb?path=/movie/top_rated&page=2`),
+        fetch(`/api/tmdb?path=/tv/popular&page=1`),
+        fetch(`/api/tmdb?path=/tv/popular&page=2`),
+        fetch(`/api/tmdb?path=/tv/top_rated&page=1`),
+        fetch(`/api/tmdb?path=/tv/top_rated&page=2`),
       ]);
       const [d1, d2, d3, d4, d5, d6, d7, d8] = await Promise.all([
         r1.json(), r2.json(), r3.json(), r4.json(),
@@ -251,15 +250,12 @@ export default function GroupRoom({ params }) {
       .from("participants").select("*").eq("session_id", sessionId);
     if (!votes?.length) { setDeciding(false); return; }
 
-    const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
-
     const result = await runGroupEngine({
       items: contentList,
       participants: votes,
       filterKeys: FILTER_KEYS,
       config: entertainmentConfig,
       enricher: enrichItems,
-      apiKey,
       kidsMode,
     });
 

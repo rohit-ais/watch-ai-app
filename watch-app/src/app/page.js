@@ -56,7 +56,7 @@ export default function Home() {
 
   // Results
   const [results, setResults] = useState([]);
-  const [noResults, setNoResults] = useState(false); // FIX: empty state flag
+  const [noResults, setNoResults] = useState(false);
   const [explore, setExplore] = useState([]);
   const [wasReset, setWasReset] = useState(false);
 
@@ -137,34 +137,33 @@ export default function Home() {
   // ─── TMDb fetch ────────────────────────────────────────────────────────────
 
   const fetchMovies = async () => {
-    const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
     let combined = [];
 
     try {
       const [p1, p2, p3, p4] = await Promise.all([
-        fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&page=1`),
-        fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${apiKey}&page=1`),
-        fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&page=2`),
-        fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${apiKey}&page=2`),
+        fetch(`/api/tmdb?path=/movie/popular&page=1`),
+        fetch(`/api/tmdb?path=/movie/top_rated&page=1`),
+        fetch(`/api/tmdb?path=/movie/popular&page=2`),
+        fetch(`/api/tmdb?path=/movie/top_rated&page=2`),
       ]);
       const [d1, d2, d3, d4] = await Promise.all([p1.json(), p2.json(), p3.json(), p4.json()]);
       const movies = [
-        ...(d1.results||[]), ...(d2.results||[]),
-        ...(d3.results||[]), ...(d4.results||[]),
+        ...(d1.results || []), ...(d2.results || []),
+        ...(d3.results || []), ...(d4.results || []),
       ];
 
       let tvResults = [];
       try {
         const [t1, t2, t3, t4] = await Promise.all([
-          fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${apiKey}&page=1`),
-          fetch(`https://api.themoviedb.org/3/tv/top_rated?api_key=${apiKey}&page=1`),
-          fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${apiKey}&page=2`),
-          fetch(`https://api.themoviedb.org/3/tv/top_rated?api_key=${apiKey}&page=2`),
+          fetch(`/api/tmdb?path=/tv/popular&page=1`),
+          fetch(`/api/tmdb?path=/tv/top_rated&page=1`),
+          fetch(`/api/tmdb?path=/tv/popular&page=2`),
+          fetch(`/api/tmdb?path=/tv/top_rated&page=2`),
         ]);
         const [td1, td2, td3, td4] = await Promise.all([t1.json(), t2.json(), t3.json(), t4.json()]);
         tvResults = [
-          ...(td1.results||[]), ...(td2.results||[]),
-          ...(td3.results||[]), ...(td4.results||[]),
+          ...(td1.results || []), ...(td2.results || []),
+          ...(td3.results || []), ...(td4.results || []),
         ];
       } catch { /* TV fetch failed — continue with movies only */ }
 
@@ -172,7 +171,7 @@ export default function Home() {
     } catch (error) {
       console.error("API Error:", error);
       try {
-        const res = await fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}`);
+        const res = await fetch(`/api/tmdb?path=/movie/popular`);
         const data = await res.json();
         combined = data.results || [];
       } catch { combined = []; }
@@ -188,11 +187,10 @@ export default function Home() {
   const handlePick = () => {
     if (!isActive) return;
     setLoading(true);
-    setNoResults(false); // reset empty state on new pick
+    setNoResults(false);
     setMessage("Analyzing your vibe...");
 
     setTimeout(async () => {
-      const apiKey = process.env.NEXT_PUBLIC_TMDB_API_KEY;
       const activeFilters = { mood, genre, time, type, platform };
 
       setMessage("Fetching details...");
@@ -203,7 +201,6 @@ export default function Home() {
         vibeText: vibe,
         config: entertainmentConfig,
         enricher: enrichItems,
-        apiKey,
         seenTracker,
       });
 
@@ -219,8 +216,6 @@ export default function Home() {
       setWasReset(reset);
       setContentList(updatedItems);
 
-      // FIX: if engine returns no topPick, show empty state instead of
-      // silently hiding the result block.
       if (!topPick) {
         setResults([]);
         setNoResults(true);
@@ -491,7 +486,7 @@ export default function Home() {
           </p>
         )}
 
-        {/* ── Empty state — no results for active filters ── */}
+        {/* ── Empty state ── */}
         {noResults && (
           <div style={{
             background: "#111",
@@ -502,19 +497,11 @@ export default function Home() {
             textAlign: "center",
           }}>
             <p style={{ fontSize: "20px", margin: "0 0 8px" }}>🎬</p>
-            <p style={{ fontSize: "13px", color: "#888", margin: "0 0 4px", fontWeight: 500 }}>
-              No matches found
-            </p>
-            <p style={{ fontSize: "11px", color: "#444", margin: "0 0 12px" }}>
-              Try removing a filter or switching platform to Any
-            </p>
+            <p style={{ fontSize: "13px", color: "#888", margin: "0 0 4px", fontWeight: 500 }}>No matches found</p>
+            <p style={{ fontSize: "11px", color: "#444", margin: "0 0 12px" }}>Try removing a filter or switching platform to Any</p>
             <button
               onClick={handleTryAgain}
-              style={{
-                background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: "8px",
-                padding: "8px 16px", color: "#555", fontSize: "12px", cursor: "pointer",
-                fontFamily: "'DM Sans', system-ui, sans-serif",
-              }}
+              style={{ background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: "8px", padding: "8px 16px", color: "#555", fontSize: "12px", cursor: "pointer", fontFamily: "'DM Sans', system-ui, sans-serif" }}
             >
               ↻ Try again
             </button>
@@ -524,15 +511,12 @@ export default function Home() {
         {/* ── Results ── */}
         {results.length > 0 && (
           <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: "16px", padding: "14px", marginBottom: "12px" }}>
-
             {wasReset && (
               <span style={{ display: "inline-block", fontSize: "10px", background: "#2a2000", color: "#f0a500", border: "1px solid #3a3000", borderRadius: "20px", padding: "2px 8px", marginBottom: "10px" }}>
                 🔁 Showing new picks
               </span>
             )}
-
             <p style={{ fontSize: "9px", color: "#444", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 10px" }}>Your Top Pick</p>
-
             <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
               {results[0].poster && (
                 <img src={results[0].poster} alt={results[0].name} style={{ width: "46px", height: "66px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }} />
@@ -550,7 +534,6 @@ export default function Home() {
                 )}
               </div>
             </div>
-
             {results.length > 1 && (
               <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #1a1a1a" }}>
                 <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 8px" }}>You may also like</p>
@@ -563,18 +546,13 @@ export default function Home() {
                       <div>
                         <p style={{ fontSize: "13px", color: "#888", margin: 0, lineHeight: 1.3 }}>{item.name}</p>
                         <p style={{ fontSize: "10px", color: "#333", margin: 0 }}>{item.type}</p>
-                        {item.rating > 0 && (
-                          <p style={{ fontSize: "9px", color: "#444", margin: 0 }}>
-                            ⭐ {item.rating.toFixed(1)}
-                          </p>
-                        )}
+                        {item.rating > 0 && <p style={{ fontSize: "9px", color: "#444", margin: 0 }}>⭐ {item.rating.toFixed(1)}</p>}
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-
             <button
               onClick={handleTryAgain}
               style={{ width: "100%", background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: "8px", padding: "8px", color: "#444", fontSize: "12px", cursor: "pointer", marginTop: "12px", fontFamily: "'DM Sans', system-ui, sans-serif" }}
@@ -607,7 +585,6 @@ export default function Home() {
 
         {/* ── Mode buttons ── */}
         <div style={{ borderTop: "1px solid #141414", paddingTop: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
-
           <button
             onClick={() => window.location.href = "/group"}
             style={{
@@ -638,8 +615,8 @@ export default function Home() {
               <path d="M5 3l4 4-4 4" stroke="#4caf50" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
           </button>
-
         </div>
+
       </div>
     </main>
   );

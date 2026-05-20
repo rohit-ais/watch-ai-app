@@ -2,6 +2,7 @@
 // Lazy fetches runtime + platform for a list of items from TMDb.
 // Called only for top candidates — never on full pool load.
 // Supabase content_cache used to avoid repeat TMDb calls (7-day expiry).
+// TMDb calls proxied via /api/tmdb — key never exposed to client.
 
 import { getTimeBucket } from "./config.js";
 import { supabase } from "../../supabase.js";
@@ -23,11 +24,9 @@ export function normalizePlatform(name) {
 
 // ─── Single item fetchers ─────────────────────────────────────────────────────
 
-export async function fetchRuntime(id, mediaType, apiKey) {
+export async function fetchRuntime(id, mediaType) {
   try {
-    const res = await fetch(
-      `https://api.themoviedb.org/3/${mediaType}/${id}?api_key=${apiKey}`
-    );
+    const res = await fetch(`/api/tmdb?path=/${mediaType}/${id}`);
     const data = await res.json();
     const mins = mediaType === "movie"
       ? data.runtime
@@ -38,11 +37,9 @@ export async function fetchRuntime(id, mediaType, apiKey) {
   }
 }
 
-export async function fetchPlatform(id, mediaType, apiKey) {
+export async function fetchPlatform(id, mediaType) {
   try {
-    const res = await fetch(
-      `https://api.themoviedb.org/3/${mediaType}/${id}/watch/providers?api_key=${apiKey}`
-    );
+    const res = await fetch(`/api/tmdb?path=/${mediaType}/${id}/watch/providers`);
     const data = await res.json();
     const providers = data.results?.IN?.flatrate;
     if (!providers?.length) return "Other";
@@ -65,7 +62,7 @@ async function getFromCache(itemId) {
       .maybeSingle();
 
     if (error || !data) return null;
-    return data.item_data; // { time, platform }
+    return data.item_data;
   } catch {
     return null;
   }
@@ -93,7 +90,7 @@ async function writeToCache(itemId, itemData) {
 
 // ─── Batch enricher ───────────────────────────────────────────────────────────
 
-export async function enrichItems(items, apiKey) {
+export async function enrichItems(items) {
   return Promise.all(
     items.map(async (item) => {
       const needsRuntime  = item.time === null || item.time === undefined;
@@ -108,10 +105,10 @@ export async function enrichItems(items, apiKey) {
         return { ...item, time: cached.time, platform: cached.platform };
       }
 
-      // ── Cache miss — fetch from TMDb ──
+      // ── Cache miss — fetch from TMDb via proxy ──
       const [runtime, platform] = await Promise.all([
-        needsRuntime  ? fetchRuntime(item.id, item.mediaType, apiKey)  : Promise.resolve(item.time),
-        needsPlatform ? fetchPlatform(item.id, item.mediaType, apiKey) : Promise.resolve(item.platform),
+        needsRuntime  ? fetchRuntime(item.id, item.mediaType)  : Promise.resolve(item.time),
+        needsPlatform ? fetchPlatform(item.id, item.mediaType) : Promise.resolve(item.platform),
       ]);
 
       // ── Write to Supabase cache (non-blocking) ──

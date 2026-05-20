@@ -58,7 +58,6 @@ export async function runSoloEngine({
   vibeText = "",
   config,
   enricher,
-  apiKey,
   seenTracker,
   kidsMode = false,
 }) {
@@ -73,14 +72,9 @@ export async function runSoloEngine({
   } = config;
 
   // ── Step 1: Hard filter ──
-  // FIX: hardFiltered is ALWAYS the boundary — never fall back to raw items.
-  // Raw items contain all types (Movie + Series). Falling back to them is
-  // what caused Series to leak when Movie was the selected type.
   const hardFiltered = applyHardFilters(items, filters, hardFilterRules);
 
   // ── Step 1.5: Kids mode filter ──
-  // Removes blocked genres (Horror/Thriller/Crime/War) + blocked certs (R/A/18+).
-  // Applied after hard filters so it operates on an already type+genre safe pool.
   const kidsFiltered = kidsMode ? applyKidsModeFilter(hardFiltered) : hardFiltered;
 
   // ── Step 2: Remove seen items ──
@@ -88,8 +82,6 @@ export async function runSoloEngine({
   let withoutSeen = applySeenFilter(kidsFiltered, seen);
 
   // ── Step 3: Handle pool exhaustion ──
-  // FIX: on exhaustion, reset seen and reuse kidsFiltered — never raw items.
-  // kidsFiltered is already type+genre+kids safe.
   let wasReset = false;
   if (withoutSeen.length === 0) {
     seenTracker.clearSeen();
@@ -97,8 +89,6 @@ export async function runSoloEngine({
     withoutSeen = [...kidsFiltered];
   }
 
-  // Edge case: kidsFiltered itself is empty (filter combo returns nothing).
-  // Return empty result — do not breach type/genre to find something.
   if (withoutSeen.length === 0) {
     return {
       topPick: null, backups: [], trustLabel: "",
@@ -139,12 +129,11 @@ export async function runSoloEngine({
   // ── Step 8: Enrich top candidates ──
   let enriched = [];
   try {
-    enriched = await enricher(shuffled, apiKey);
+    enriched = await enricher(shuffled);
   } catch {
-    enriched = shuffled; // enrichment failed — use unenriched items
+    enriched = shuffled;
   }
 
-  // Guard: if enrichment returned empty, use shuffled as-is
   if (!enriched || enriched.length === 0) enriched = shuffled;
 
   // ── Step 9: Full score with enriched data ──
@@ -194,10 +183,6 @@ export async function runSoloEngine({
   const sorted = sortAndShuffle(finalList);
 
   // ── Step 13: SAFETY — enforce type + genre on final output ──
-  // FIX: removed escape hatch "(safeTop.length > 0 ? safeTop : sorted)".
-  // The old fallback to `sorted` allowed unfiltered items (Series) to appear
-  // when enforceHardFiltersOnOutput removed everything. Now if safeTop is
-  // empty, we return empty — type + genre are NEVER breached.
   const safeTop = enforceHardFiltersOnOutput(sorted, filters, hardFilterRules);
   const top3 = safeTop.slice(0, 3);
 
@@ -246,7 +231,6 @@ export async function runGroupEngine({
   filterKeys,
   config,
   enricher,
-  apiKey,
   kidsMode = false,
 }) {
   const {
@@ -263,14 +247,12 @@ export async function runGroupEngine({
   const mergedFilters = mergeFilters(participants, filterKeys);
 
   // ── Step 2: Hard filter ──
-  // FIX: same as solo — never fall back to raw items if hardFiltered is empty.
   const hardFiltered = applyHardFilters(items, mergedFilters, hardFilterRules);
 
   // ── Step 1.5: Kids mode filter ──
-  // Applied after hard filters — removes blocked genres + certifications.
   const kidsFiltered = kidsMode ? applyKidsModeFilter(hardFiltered) : hardFiltered;
 
-  // Edge case: no items pass hard filters — return empty result.
+  // Edge case: no items pass filters — return empty result.
   if (kidsFiltered.length === 0) {
     return {
       topPick: null, backups: [], trustLabel: "",
@@ -299,7 +281,7 @@ export async function runGroupEngine({
   // ── Step 5: Enrich ──
   let enriched = [];
   try {
-    enriched = await enricher(shuffled, apiKey);
+    enriched = await enricher(shuffled);
   } catch {
     enriched = shuffled;
   }
@@ -357,8 +339,6 @@ export async function runGroupEngine({
   const sorted = sortAndShuffle(finalList);
 
   // ── Step 10: SAFETY — enforce type + genre on final output ──
-  // FIX: removed escape hatch — same reasoning as solo engine Step 13.
-  // type + genre are NEVER breached, even if safeTop is empty.
   const safeTop = enforceHardFiltersOnOutput(sorted, mergedFilters, hardFilterRules);
   const top3 = safeTop.slice(0, 3);
 
