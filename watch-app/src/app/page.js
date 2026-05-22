@@ -143,8 +143,8 @@ export default function Home() {
       const [p1, p2, p3, p4] = await Promise.all([
         fetch(`/api/tmdb?path=/movie/popular&page=1`),
         fetch(`/api/tmdb?path=/movie/top_rated&page=1`),
-        fetch(`/api/tmdb?path=/movie/popular&page=2`),
-        fetch(`/api/tmdb?path=/movie/top_rated&page=2`),
+        fetch(`/api/tmdb?path=/discover/movie&sort_by=vote_average.desc&vote_count.gte=15000&vote_count.lte=150000&page=1`),
+        fetch(`/api/tmdb?path=/discover/movie&sort_by=vote_average.desc&vote_count.gte=15000&vote_count.lte=150000&page=2`),
       ]);
       const [d1, d2, d3, d4] = await Promise.all([p1.json(), p2.json(), p3.json(), p4.json()]);
       const movies = [
@@ -157,8 +157,8 @@ export default function Home() {
         const [t1, t2, t3, t4] = await Promise.all([
           fetch(`/api/tmdb?path=/tv/popular&page=1`),
           fetch(`/api/tmdb?path=/tv/top_rated&page=1`),
-          fetch(`/api/tmdb?path=/tv/popular&page=2`),
-          fetch(`/api/tmdb?path=/tv/top_rated&page=2`),
+          fetch(`/api/tmdb?path=/discover/tv&sort_by=vote_average.desc&vote_count.gte=15000&vote_count.lte=150000&page=1`),
+          fetch(`/api/tmdb?path=/discover/tv&sort_by=vote_average.desc&vote_count.gte=15000&vote_count.lte=150000&page=2`),
         ]);
         const [td1, td2, td3, td4] = await Promise.all([t1.json(), t2.json(), t3.json(), t4.json()]);
         tvResults = [

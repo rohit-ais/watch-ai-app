@@ -136,13 +136,13 @@ export default function GroupRoom({ params }) {
     try {
       const [r1, r2, r3, r4, r5, r6, r7, r8] = await Promise.all([
         fetch(`/api/tmdb?path=/movie/popular&page=1`),
-        fetch(`/api/tmdb?path=/movie/popular&page=2`),
         fetch(`/api/tmdb?path=/movie/top_rated&page=1`),
-        fetch(`/api/tmdb?path=/movie/top_rated&page=2`),
+        fetch(`/api/tmdb?path=/discover/movie&sort_by=vote_average.desc&vote_count.gte=15000&vote_count.lte=150000&page=1`),
+        fetch(`/api/tmdb?path=/discover/movie&sort_by=vote_average.desc&vote_count.gte=15000&vote_count.lte=150000&page=2`),
         fetch(`/api/tmdb?path=/tv/popular&page=1`),
-        fetch(`/api/tmdb?path=/tv/popular&page=2`),
         fetch(`/api/tmdb?path=/tv/top_rated&page=1`),
-        fetch(`/api/tmdb?path=/tv/top_rated&page=2`),
+        fetch(`/api/tmdb?path=/discover/tv&sort_by=vote_average.desc&vote_count.gte=15000&vote_count.lte=150000&page=1`),
+        fetch(`/api/tmdb?path=/discover/tv&sort_by=vote_average.desc&vote_count.gte=15000&vote_count.lte=150000&page=2`),
       ]);
       const [d1, d2, d3, d4, d5, d6, d7, d8] = await Promise.all([
         r1.json(), r2.json(), r3.json(), r4.json(),
