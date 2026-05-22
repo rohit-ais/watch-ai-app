@@ -28,7 +28,7 @@ import {
 
 // ─── Helper: enforce hard filters on final output ─────────────────────────────
 // Runs on final sorted output — guarantees type + genre always hold.
-// Platform is intentionally excluded — can be sacrificed in fallback.
+// platformFilterKey is intentionally excluded — can be sacrificed in fallback.
 // NO escape hatch — if everything is removed, caller receives empty array.
 
 function enforceHardFiltersOnOutput(items, filters, hardFilterRules) {
@@ -69,6 +69,9 @@ export async function runSoloEngine({
     candidatePoolSize,
     vagueWordThreshold,
     moodGenreMap,
+    platformFilterKey,
+    enrichedFields,
+    vagueScoreFn,
   } = config;
 
   // ── Step 1: Hard filter ──
@@ -101,13 +104,15 @@ export async function runSoloEngine({
   const vague = isVagueRequest(filters, vibeText, vagueWordThreshold);
 
   // ── Step 5: Pre-score ──
+  // Vague mode: use domain-supplied vagueScoreFn from config.
+  // Non-vague: use standard intent-based preScore.
   const maxPossible = calcMaxPossible(filters, weights);
   let preScored;
 
-  if (vague) {
+  if (vague && vagueScoreFn) {
     preScored = withoutSeen.map((item) => ({
       ...item,
-      score: (item.rating || 0) + (item.popularity || 0) / 100,
+      score: vagueScoreFn(item),
     }));
   } else {
     preScored = withoutSeen.map((item) => ({
@@ -158,12 +163,16 @@ export async function runSoloEngine({
   const primaryPool = scoredPrimary.length > 0 ? scoredPrimary : fullScored;
 
   // ── Step 11: Platform post-enrichment filter ──
+  // Only applied if domain defines a platformFilterKey and it is active.
+  // Plans domain sets platformFilterKey to null — this block is skipped entirely.
   let finalList;
   let wasFallback = false;
 
-  if (filters.platform && filters.platform !== "Any") {
+  const activePlatform = platformFilterKey ? filters[platformFilterKey] : null;
+
+  if (activePlatform && activePlatform !== "Any") {
     const platformFiltered = primaryPool.filter(
-      (item) => item.platform === filters.platform
+      (item) => item[platformFilterKey] === activePlatform
     );
     if (platformFiltered.length > 0) {
       finalList = platformFiltered;
@@ -198,11 +207,15 @@ export async function runSoloEngine({
   seenTracker.addSeen(top3.map((i) => i.name));
 
   // ── Step 15: Cache enriched values back ──
+  // Only merges fields listed in config.enrichedFields.
+  // Entertainment: ["time", "platform"]. Plans: ["effortScore", "noveltyScore"].
+  const fields = enrichedFields || [];
   const updatedItems = items.map((item) => {
     const enrichedItem = enriched.find((e) => e && e.id === item.id);
-    return enrichedItem
-      ? { ...item, time: enrichedItem.time, platform: enrichedItem.platform }
-      : item;
+    if (!enrichedItem) return item;
+    const updates = {};
+    fields.forEach((f) => { updates[f] = enrichedItem[f]; });
+    return { ...item, ...updates };
   });
 
   // ── Step 16: Build result ──
@@ -241,6 +254,8 @@ export async function runGroupEngine({
     conflictThreshold,
     candidatePoolSize,
     moodGenreMap,
+    platformFilterKey,
+    enrichedFields,
   } = config;
 
   // ── Step 1: Merge participant filters ──
@@ -252,7 +267,6 @@ export async function runGroupEngine({
   // ── Step 1.5: Kids mode filter ──
   const kidsFiltered = kidsMode ? applyKidsModeFilter(hardFiltered) : hardFiltered;
 
-  // Edge case: no items pass filters — return empty result.
   if (kidsFiltered.length === 0) {
     return {
       topPick: null, backups: [], trustLabel: "",
@@ -307,19 +321,22 @@ export async function runGroupEngine({
   // ── Step 7: Conflict penalty ──
   const withPenalty = applyConflictPenalty(
     fullScored, participants, weights, moodGenreMap,
-    conflictThreshold, fullScore, calcMaxPossible
+    conflictThreshold, filterKeys, fullScore, calcMaxPossible
   );
 
   // ── Step 8: Platform post-enrichment filter ──
+  // Only applied if domain defines a platformFilterKey and it is active.
   let finalList;
   let wasFallback = false;
 
   const scoredPrimary = applyMinScoreFilter(withPenalty, maxPossible);
   const primaryPool = scoredPrimary.length > 0 ? scoredPrimary : withPenalty;
 
-  if (mergedFilters.platform && mergedFilters.platform !== "Any") {
+  const activePlatform = platformFilterKey ? mergedFilters[platformFilterKey] : null;
+
+  if (activePlatform && activePlatform !== "Any") {
     const platformFiltered = primaryPool.filter(
-      (item) => item.platform === mergedFilters.platform
+      (item) => item[platformFilterKey] === activePlatform
     );
     if (platformFiltered.length > 0) {
       finalList = platformFiltered;
@@ -353,7 +370,7 @@ export async function runGroupEngine({
   // ── Step 11: Group fairness ──
   const fairness = calcGroupFairness(
     top3[0], participants, weights, moodGenreMap,
-    conflictThreshold, fullScore, calcMaxPossible
+    conflictThreshold, filterKeys, fullScore, calcMaxPossible
   );
 
   // ── Step 12: Build result ──

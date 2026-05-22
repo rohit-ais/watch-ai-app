@@ -70,7 +70,7 @@ describe('applyConflictPenalty', () => {
   test('single participant — no penalty applied', () => {
     const items = [{ id: 1, score: 5, genres: [28], time: null, rating: 7, voteCount: 100, popularity: 10 }]
     const participants = [{ mood: 'Fun', genre: null, time: '', type: '', platform: '' }]
-    const result = applyConflictPenalty(items, participants, weights, moodGenreMap, 0.3, fullScore, calcMaxPossible)
+    const result = applyConflictPenalty(items, participants, weights, moodGenreMap, 0.3, filterKeys, fullScore, calcMaxPossible)
     expect(result[0].score).toBe(5)
   })
 
@@ -80,7 +80,7 @@ describe('applyConflictPenalty', () => {
       { mood: 'Fun',      genre: null, time: '', type: '', platform: '' },
       { mood: 'Emotional', genre: null, time: '', type: '', platform: '' },
     ]
-    const result = applyConflictPenalty(items, participants, weights, moodGenreMap, 0.3, fullScore, calcMaxPossible)
+    const result = applyConflictPenalty(items, participants, weights, moodGenreMap, 0.3, filterKeys, fullScore, calcMaxPossible)
     expect(result[0].score).toBeLessThan(5)
   })
 })
@@ -94,13 +94,13 @@ describe('calcGroupFairness', () => {
       { mood: 'Fun', genre: null, time: '', type: '', platform: '' },
       { mood: 'Fun', genre: null, time: '', type: '', platform: '' },
     ]
-    const result = calcGroupFairness(item, participants, weights, moodGenreMap, 0.3, fullScore, calcMaxPossible)
+    const result = calcGroupFairness(item, participants, weights, moodGenreMap, 0.3, filterKeys, fullScore, calcMaxPossible)
     expect(result.pct).toBe(100)
   })
 
   test('empty participants — returns 0', () => {
     const item = { genres: [28] }
-    const result = calcGroupFairness(item, [], weights, moodGenreMap, 0.3, fullScore, calcMaxPossible)
+    const result = calcGroupFairness(item, [], weights, moodGenreMap, 0.3, filterKeys, fullScore, calcMaxPossible)
     expect(result.pct).toBe(0)
   })
 })

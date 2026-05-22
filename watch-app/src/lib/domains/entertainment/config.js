@@ -168,6 +168,27 @@ export const CANDIDATE_POOL_SIZE = 20;
 
 export const DOMAIN = "entertainment";
 
+// ─── Platform filter key ──────────────────────────────────────────────────────
+// Tells core.js which filter key represents platform/availability.
+// Set to null in domains that have no platform concept.
+
+export const PLATFORM_FILTER_KEY = "platform";
+
+// ─── Enriched fields ─────────────────────────────────────────────────────────
+// Fields that get populated during enrichment and should be cached back
+// onto items in the content pool after each pick.
+// Plans domain would list different fields e.g. ["effortScore", "noveltyScore"].
+
+export const ENRICHED_FIELDS = ["time", "platform"];
+
+// ─── Vague score function ─────────────────────────────────────────────────────
+// Used when no filters are active and vibe text is too short.
+// Falls back to domain-specific quality signals instead of intent matching.
+// Plans domain provides its own function using popularityScore + noveltyScore.
+
+export const vagueScoreFn = (item) =>
+  (item.rating || 0) + (item.popularity || 0) / 100;
+
 // ─── Assembled config object ──────────────────────────────────────────────────
 
 export const entertainmentConfig = {
@@ -179,4 +200,7 @@ export const entertainmentConfig = {
   candidatePoolSize:  CANDIDATE_POOL_SIZE,
   vagueWordThreshold: VAGUE_WORD_THRESHOLD,
   moodGenreMap:       GENRE_TO_MOOD,
+  platformFilterKey:  PLATFORM_FILTER_KEY,
+  enrichedFields:     ENRICHED_FIELDS,
+  vagueScoreFn:       vagueScoreFn,
 };

@@ -65,6 +65,25 @@ export function maxForParticipant(participantFilters, weights, calcMaxFn) {
 }
 
 /**
+ * Build participant filters dynamically from filterKeys.
+ * Replaces hardcoded entertainment filter key extraction.
+ * Works for any domain — Plans, Entertainment, Food, etc.
+ *
+ * @param {Object} participant
+ * @param {Array}  filterKeys
+ * @returns {Object}
+ */
+function buildParticipantFilters(participant, filterKeys) {
+  const pFilters = {};
+  for (const key of filterKeys) {
+    const val = participant[key];
+    // genre uses null as empty, all others use ""
+    pFilters[key] = val !== undefined && val !== null && val !== "" ? val : (key === "genre" ? null : "");
+  }
+  return pFilters;
+}
+
+/**
  * Apply group conflict penalty to scored items.
  *
  * For each item:
@@ -77,6 +96,7 @@ export function maxForParticipant(participantFilters, weights, calcMaxFn) {
  * @param {Object}   weights            - From domain config
  * @param {Object}   moodGenreMap       - From domain config
  * @param {number}   conflictThreshold  - e.g. 0.30 (30%)
+ * @param {Array}    filterKeys         - Domain filter keys
  * @param {Function} scoreItemFn        - fullScore from scorer.js
  * @param {Function} calcMaxFn          - calcMaxPossible from scorer.js
  * @returns {Array} items with adjusted scores
@@ -87,6 +107,7 @@ export function applyConflictPenalty(
   weights,
   moodGenreMap,
   conflictThreshold,
+  filterKeys,
   scoreItemFn,
   calcMaxFn
 ) {
@@ -96,14 +117,7 @@ export function applyConflictPenalty(
     let penalty = 0;
 
     for (const participant of participants) {
-      const pFilters = {
-        mood:     participant.mood     || "",
-        genre:    participant.genre    || null,
-        time:     participant.time     || "",
-        type:     participant.type     || "",
-        platform: participant.platform || "",
-      };
-
+      const pFilters = buildParticipantFilters(participant, filterKeys);
       const pMax   = calcMaxFn(pFilters, weights);
       const pScore = scoreItemFn(item, pFilters, weights, moodGenreMap, null, null);
 
@@ -153,6 +167,7 @@ export function majority(votes) {
  * @param {Object}   weights
  * @param {Object}   moodGenreMap
  * @param {number}   conflictThreshold
+ * @param {Array}    filterKeys
  * @param {Function} scoreItemFn
  * @param {Function} calcMaxFn
  * @returns {{ satisfied: number, total: number, pct: number }}
@@ -163,6 +178,7 @@ export function calcGroupFairness(
   weights,
   moodGenreMap,
   conflictThreshold,
+  filterKeys,
   scoreItemFn,
   calcMaxFn
 ) {
@@ -173,14 +189,7 @@ export function calcGroupFairness(
   let satisfied = 0;
 
   for (const participant of participants) {
-    const pFilters = {
-      mood:     participant.mood     || "",
-      genre:    participant.genre    || null,
-      time:     participant.time     || "",
-      type:     participant.type     || "",
-      platform: participant.platform || "",
-    };
-
+    const pFilters = buildParticipantFilters(participant, filterKeys);
     const pMax   = calcMaxFn(pFilters, weights);
     const pScore = scoreItemFn(item, pFilters, weights, moodGenreMap, null, null);
 
