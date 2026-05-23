@@ -30,7 +30,7 @@ export default function GroupPage() {
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Serif+Display&display=swap" rel="stylesheet" />
       <div style={{ width: "100%", maxWidth: "360px" }}>
 
-        <button onClick={() => window.location.href = "/"} style={{ background: "none", border: "none", color: "#333", cursor: "pointer", fontSize: "12px", padding: 0, marginBottom: "24px", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+        <button onClick={() => window.location.href = "/watch"} style={{ background: "none", border: "none", color: "#333", cursor: "pointer", fontSize: "12px", padding: 0, marginBottom: "24px", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
           ← Back
         </button>
 
