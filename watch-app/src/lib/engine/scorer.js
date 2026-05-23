@@ -33,6 +33,21 @@ export function preScore(item, activeFilters, weights, moodGenreMap) {
     }
   }
 
+  // Vibe match — Plans domain (item.tags array, moodGenreMap is VIBE_TO_TAG)
+  if (activeFilters.vibe && item.tags) {
+    const vibeTag = moodGenreMap[activeFilters.vibe] || activeFilters.vibe;
+    if (item.tags.includes(vibeTag)) {
+      score += weights.vibe || 0;
+    }
+  }
+
+  // Group type match — Plans domain
+  if (activeFilters.groupType && item.groupTypes) {
+    if (item.groupTypes.includes(activeFilters.groupType)) {
+      score += weights.groupType || 0;
+    }
+  }
+
   return score;
 }
 
@@ -53,7 +68,7 @@ export function fullScore(item, activeFilters, weights, moodGenreMap, qualityThr
 
   // ── Primary intent scores ──
 
-  // Genre match
+  // Genre match — Entertainment domain
   if (activeFilters.genre) {
     const genreId = parseInt(activeFilters.genre);
     if (item.genres && item.genres.includes(genreId)) {
@@ -66,22 +81,59 @@ export function fullScore(item, activeFilters, weights, moodGenreMap, qualityThr
     }
   }
 
+  // Vibe match — Plans domain
+  if (activeFilters.vibe && item.tags) {
+    const vibeTag = moodGenreMap[activeFilters.vibe] || activeFilters.vibe;
+    if (item.tags.includes(vibeTag)) {
+      score += weights.vibe || 0;
+    }
+  }
+
+  // Group type match — Plans domain
+  if (activeFilters.groupType && item.groupTypes) {
+    if (item.groupTypes.includes(activeFilters.groupType)) {
+      score += weights.groupType || 0;
+    }
+  }
+
   // Time match
   if (activeFilters.time && item.time === activeFilters.time) {
     score += weights.time;
   }
 
+  // Budget match — Plans domain
+  if (activeFilters.budget && item.budget) {
+    if (item.budget === activeFilters.budget) {
+      score += weights.budget || 0;
+    }
+  }
+
+  // Location match — Plans domain
+  if (activeFilters.location && activeFilters.location !== "any" && item.location) {
+    if (item.location === activeFilters.location) {
+      score += weights.location || 0;
+    }
+  }
+
   // ── Quality boost (silent — never overrides intent) ──
 
   if (qualityThresholds) {
-    if (item.rating && item.rating >= qualityThresholds.rating) {
+    // Entertainment quality signals
+    if (item.rating && qualityThresholds.rating && item.rating >= qualityThresholds.rating) {
       score += weights.highRating || 0;
     }
-    if (item.voteCount && item.voteCount >= qualityThresholds.votes) {
+    if (item.voteCount && qualityThresholds.votes && item.voteCount >= qualityThresholds.votes) {
       score += weights.highVotes || 0;
     }
     if (isVague && popularityP80 && item.popularity && item.popularity >= popularityP80) {
       score += weights.popular || 0;
+    }
+    // Plans quality signals
+    if (item.noveltyScore && qualityThresholds.novelty && item.noveltyScore >= qualityThresholds.novelty) {
+      score += weights.novelty || 0;
+    }
+    if (item.popularityScore && qualityThresholds.popularity && item.popularityScore >= qualityThresholds.popularity) {
+      score += weights.popularity || 0;
     }
   }
 
@@ -98,11 +150,16 @@ export function fullScore(item, activeFilters, weights, moodGenreMap, qualityThr
  */
 export function calcMaxPossible(activeFilters, weights) {
   let max = 0;
-  if (activeFilters.genre)  max += weights.genre;
+  // Entertainment
+  if (activeFilters.genre)     max += weights.genre;
   else if (activeFilters.mood) max += weights.mood;
-  if (activeFilters.time)   max += weights.time;
-  // Quality boosts are additive but not counted in maxPossible
-  // to keep trust label based on intent match only
+  if (activeFilters.time)      max += weights.time;
+  // Plans
+  if (activeFilters.vibe)      max += weights.vibe || 0;
+  if (activeFilters.groupType) max += weights.groupType || 0;
+  if (activeFilters.budget)    max += weights.budget || 0;
+  if (activeFilters.location && activeFilters.location !== "any") max += weights.location || 0;
+  // Quality boosts not counted — trust label based on intent match only
   return max;
 }
 
@@ -116,7 +173,6 @@ export function calcMaxPossible(activeFilters, weights) {
  */
 export function getTrustLabel(score, maxPossible, trustThresholds) {
   if (!maxPossible || maxPossible === 0) {
-    // No filters active — use last threshold (recommended)
     return trustThresholds[trustThresholds.length - 1].label;
   }
   const pct = Math.round((score / maxPossible) * 100);
@@ -162,7 +218,7 @@ export function calcPopularityP80(items) {
  * Get mood array for an item based on its genre IDs.
  * An item can match multiple moods.
  *
- * @param {Array}  genreIds    - Array of TMDb genre IDs
+ * @param {Array}  genreIds     - Array of TMDb genre IDs
  * @param {Object} moodGenreMap - genre ID → mood string
  * @returns {Array} array of mood strings
  */
