@@ -48,6 +48,20 @@ export function passesHardFilters(item, activeFilters, hardFilterRules) {
       const genreId = parseInt(filterValue);
       if (!item.genres || !item.genres.includes(genreId)) return false;
     }
+
+    // Generic field check — handles Plans domain filters
+    if (filterKey !== "type" && filterKey !== "platform" && filterKey !== "genre") {
+      // groupType filter checks item.groupTypes (array)
+      if (filterKey === "groupType") {
+        if (!item.groupTypes || !item.groupTypes.includes(filterValue)) return false;
+      } else {
+        // Scalar field check — budget, time
+        const itemValue = item[filterKey];
+        if (itemValue !== undefined && itemValue !== null) {
+          if (itemValue !== filterValue) return false;
+        }
+      }
+    }
   }
   return true;
 }
