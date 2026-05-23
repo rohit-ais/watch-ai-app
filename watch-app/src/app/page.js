@@ -76,10 +76,9 @@ export default function Home() {
                   flexShrink: 0,
                 }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <rect x="2" y="4" width="20" height="14" rx="2" stroke="#e53935" strokeWidth="1.5" />
-                    <path d="M10 9l5 3-5 3V9z" fill="#e53935" />
-                    <path d="M8 20h8" stroke="#e53935" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M12 18v2" stroke="#e53935" strokeWidth="1.5" strokeLinecap="round" />
+                    <rect x="2" y="4" width="20" height="14" rx="2" stroke="#e53935" strokeWidth="1.5"/>
+                    <path d="M10 9l5 3-5 3V9z" fill="#e53935"/>
+                    <path d="M8 20h8M12 18v2" stroke="#e53935" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
                 </div>
                 <div>
@@ -116,27 +115,25 @@ export default function Home() {
               overflow: "hidden",
               transition: "border-color 0.2s",
             }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = "#4caf50"}
+            onMouseEnter={e => e.currentTarget.style.borderColor = "#e53935"}
             onMouseLeave={e => e.currentTarget.style.borderColor = "#1e1e1e"}
           >
             <div style={{
               position: "absolute", top: 0, left: 0, right: 0,
               height: "1px",
-              background: "linear-gradient(90deg,transparent,#4caf50,transparent)",
+              background: "linear-gradient(90deg,transparent,#e53935,transparent)",
             }} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
                 <div style={{
                   width: "44px", height: "44px",
-                  background: "#0a1a0a",
+                  background: "#1a0a0a",
                   borderRadius: "12px",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0,
                 }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="9" stroke="#4caf50" strokeWidth="1.5" />
-                    <path d="M12 7v5l3 3" stroke="#4caf50" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M7 3.5C8.5 2.5 10.2 2 12 2" stroke="#4caf50" strokeWidth="1.5" strokeLinecap="round" />
+                    <path d="M13 2L4.5 13.5H12L11 22L19.5 10.5H12L13 2z" stroke="#e53935" strokeWidth="1.5" strokeLinejoin="round"/>
                   </svg>
                 </div>
                 <div>

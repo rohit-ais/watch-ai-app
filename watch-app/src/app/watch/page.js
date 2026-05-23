@@ -29,6 +29,23 @@ function formatVotes(count) {
   return count.toString();
 }
 
+const PLATFORM_LINKS = {
+  Netflix: (name) => `https://www.netflix.com/search?q=${encodeURIComponent(name)}`,
+  Prime: (name) => `https://www.primevideo.com/search/?phrase=${encodeURIComponent(name)}`,
+  "Disney+": (name) => `https://www.disneyplus.com/search/${encodeURIComponent(name)}`,
+  JioCinema:  (name) => `https://www.jiocinema.com/search?q=${encodeURIComponent(name)}`,
+};
+
+function getWatchLink(item, selectedPlatform) {
+  const target = (selectedPlatform && selectedPlatform !== "Any")
+    ? selectedPlatform
+    : item.platform;
+  if (target && PLATFORM_LINKS[target]) {
+    return PLATFORM_LINKS[target](item.name);
+  }
+  return `https://www.google.com/search?q=watch+${encodeURIComponent(item.name)}+online+streaming`;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Home() {
@@ -288,6 +305,19 @@ export default function Home() {
     inputRef.current?.focus();
   };
 
+  const handleWatchIntent = (item) => {
+    logPick({
+      domain: DOMAIN,
+      mode: "solo",
+      filters: { mood, genre, time, type, platform, intent: "watch_click" },
+      topPick: item,
+      matchLabel: item.trustLabel || "",
+      wasFallback: false,
+      sessionId: null,
+    });
+    window.open(getWatchLink(item, platform), "_blank");
+  };
+
   // ─── Styles ────────────────────────────────────────────────────────────────
 
   const S = {
@@ -532,7 +562,12 @@ export default function Home() {
               </span>
             )}
             <p style={{ fontSize: "9px", color: "#444", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 10px" }}>Your Top Pick</p>
-            <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+            <div
+              onClick={() => handleWatchIntent(results[0])}
+              style={{ display: "flex", gap: "12px", alignItems: "flex-start", cursor: "pointer", borderRadius: "8px", padding: "6px", margin: "-6px", transition: "all 0.15s", border: "1px solid transparent" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#1a1a1a"; e.currentTarget.style.borderColor = "#e53935"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "transparent"; }}
+            >
               {results[0].poster && (
                 <img src={results[0].poster} alt={results[0].name} style={{ width: "46px", height: "66px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }} />
               )}
