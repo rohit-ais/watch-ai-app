@@ -167,7 +167,14 @@ export default function Home() {
         ];
       } catch { /* TV fetch failed — continue with movies only */ }
 
-      combined = [...movies, ...tvResults];
+      let trendingResults = [];
+      try {
+        const tr = await fetch(`/api/tmdb?path=/trending/all/week`);
+        const trd = await tr.json();
+        trendingResults = trd.results || [];
+      } catch { /* Trending fetch failed — continue without */ }
+
+      combined = [...movies, ...tvResults, ...trendingResults];
     } catch (error) {
       console.error("API Error:", error);
       try {
