@@ -135,14 +135,14 @@ export default function GroupRoom({ params }) {
   const fetchContent = async () => {
     try {
       const [r1, r2, r3, r4, r5, r6, r7, r8] = await Promise.all([
-        fetch(`/api/tmdb?path=/movie/popular&page=1`),
-        fetch(`/api/tmdb?path=/movie/top_rated&page=1`),
-        fetch(`/api/tmdb?path=/discover/movie&sort_by=vote_average.desc&vote_count.gte=15000&vote_count.lte=150000&page=1`),
-        fetch(`/api/tmdb?path=/discover/movie&sort_by=vote_average.desc&vote_count.gte=15000&vote_count.lte=150000&page=2`),
-        fetch(`/api/tmdb?path=/tv/popular&page=1`),
-        fetch(`/api/tmdb?path=/tv/top_rated&page=1`),
-        fetch(`/api/tmdb?path=/discover/tv&sort_by=vote_average.desc&vote_count.gte=15000&vote_count.lte=150000&page=1`),
-        fetch(`/api/tmdb?path=/discover/tv&sort_by=vote_average.desc&vote_count.gte=15000&vote_count.lte=150000&page=2`),
+        fetch(`/api/tmdb?path=/movie/popular&page=2`),
+        fetch(`/api/tmdb?path=/movie/top_rated&page=1&vote_count.lte=500000`),
+        fetch(`/api/tmdb?path=/discover/movie&sort_by=vote_average.desc&vote_count.gte=8000&vote_count.lte=150000&page=1`),
+        fetch(`/api/tmdb?path=/discover/movie&sort_by=vote_average.desc&vote_count.gte=8000&vote_count.lte=150000&page=2`),
+        fetch(`/api/tmdb?path=/tv/popular&page=2`),
+        fetch(`/api/tmdb?path=/tv/top_rated&page=1&vote_count.lte=500000`),
+        fetch(`/api/tmdb?path=/discover/tv&sort_by=vote_average.desc&vote_count.gte=8000&vote_count.lte=150000&page=1`),
+        fetch(`/api/tmdb?path=/discover/tv&sort_by=vote_average.desc&vote_count.gte=8000&vote_count.lte=150000&page=2`),
       ]);
       const [d1, d2, d3, d4, d5, d6, d7, d8] = await Promise.all([
         r1.json(), r2.json(), r3.json(), r4.json(),
@@ -321,7 +321,7 @@ export default function GroupRoom({ params }) {
         {/* ── TOP NAV ── */}
         <div style={{ marginBottom: "16px" }}>
           {!joined && (
-            <button onClick={() => window.location.href = "/"} style={{ background: "none", border: "none", color: "#333", cursor: "pointer", fontSize: "12px", padding: 0, fontFamily: "'DM Sans',system-ui,sans-serif" }}>← Back</button>
+            <button onClick={() => window.location.href = "/group"} style={{ background: "none", border: "none", color: "#333", cursor: "pointer", fontSize: "12px", padding: 0, fontFamily: "'DM Sans',system-ui,sans-serif" }}>← Back</button>
           )}
           {joined && isHost && !showEndConfirm && (
             <button onClick={() => setShowEndConfirm(true)} style={{ background: "none", border: "none", color: "#333", cursor: "pointer", fontSize: "12px", padding: 0, fontFamily: "'DM Sans',system-ui,sans-serif" }}>✕ End session</button>
@@ -587,8 +587,8 @@ export default function GroupRoom({ params }) {
                 </div>
               </div>
             )}
-            <button onClick={() => window.location.href = "/"} style={{ width: "100%", background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: "8px", padding: "8px", color: "#444", fontSize: "12px", cursor: "pointer", fontFamily: "'DM Sans',system-ui,sans-serif" }}>
-              ← Back to home
+            <button onClick={() => window.location.href = "/group"} style={{ width: "100%", background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: "8px", padding: "8px", color: "#444", fontSize: "12px", cursor: "pointer", fontFamily: "'DM Sans',system-ui,sans-serif" }}>
+              ← Start a new room
             </button>
           </div>
         )}
@@ -597,8 +597,8 @@ export default function GroupRoom({ params }) {
         {session.status === "ended" && (
           <div style={{ textAlign: "center", padding: "24px 0" }}>
             <p style={{ fontSize: "13px", color: "#444", margin: "0 0 16px" }}>This session has ended.</p>
-            <button onClick={() => window.location.href = "/"} style={{ background: "#111", border: "1px solid #1a1a1a", borderRadius: "10px", padding: "10px 20px", color: "#666", fontSize: "13px", cursor: "pointer", fontFamily: "'DM Sans',system-ui,sans-serif" }}>
-              ← Back to home
+            <button onClick={() => window.location.href = "/group"} style={{ background: "#111", border: "1px solid #1a1a1a", borderRadius: "10px", padding: "10px 20px", color: "#666", fontSize: "13px", cursor: "pointer", fontFamily: "'DM Sans',system-ui,sans-serif" }}>
+              ← Start a new room
             </button>
           </div>
         )}
