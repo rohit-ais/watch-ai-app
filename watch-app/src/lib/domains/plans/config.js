@@ -81,7 +81,7 @@ export const HARD_FILTER_RULES = {
   groupType: true,
   time:      true,
   budget:    true,
-  location:  false, // soft — "Any" means both Indoor + Outdoor pass
+  location:  true, // hard — Indoor means Indoor, Outdoor means Outdoor, Any passes both
   vibe:      false, // soft — optional filter, scoring only
 };
 

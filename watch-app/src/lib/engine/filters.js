@@ -55,7 +55,8 @@ export function passesHardFilters(item, activeFilters, hardFilterRules) {
       if (filterKey === "groupType") {
         if (!item.groupTypes || !item.groupTypes.includes(filterValue)) return false;
       } else {
-        // Scalar field check — budget, time
+        // Scalar field check — budget, time, location
+        if (filterValue === "any") continue; // "Any" means no restriction
         const itemValue = item[filterKey];
         if (itemValue !== undefined && itemValue !== null) {
           if (itemValue !== filterValue) return false;

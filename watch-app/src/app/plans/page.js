@@ -12,22 +12,22 @@ const CITY_STORAGE_KEY = "plans-city";
 export default function PlansPage() {
 
   // ── Filters ──
-  const [groupType, setGroupType]   = useState("");
-  const [time, setTime]             = useState("");
-  const [budget, setBudget]         = useState("");
-  const [location, setLocation]     = useState("");
-  const [vibe, setVibe]             = useState("");
-  const [city, setCity]             = useState("");
+  const [groupType, setGroupType] = useState("");
+  const [time, setTime] = useState("");
+  const [budget, setBudget] = useState("");
+  const [location, setLocation] = useState("");
+  const [vibe, setVibe] = useState("");
+  const [city, setCity] = useState("");
   const [showCityPicker, setShowCityPicker] = useState(false);
 
   // ── Engine ──
   const [activityList, setActivityList] = useState([]);
-  const [appReady, setAppReady]         = useState(false);
-  const [loading, setLoading]           = useState(false);
-  const [message, setMessage]           = useState("");
+  const [appReady, setAppReady] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
   // ── Results ──
-  const [results, setResults]   = useState([]);
+  const [results, setResults] = useState([]);
   const [noResults, setNoResults] = useState(false);
   const [wasReset, setWasReset] = useState(false);
 
@@ -71,18 +71,18 @@ export default function PlansPage() {
     setTimeout(async () => {
       const activeFilters = {
         groupType: groupType.toLowerCase(),
-        time,
-        budget:    budget.toLowerCase(),
-        location:  location.toLowerCase(),
-        vibe:      vibe ? vibe.toLowerCase().replace("+", "-") : "",
+        time: time.toLowerCase(),
+        budget: budget.toLowerCase(),
+        location: location.toLowerCase(),
+        vibe: vibe ? vibe.toLowerCase().replace("+", "-") : "",
       };
 
       const result = await runSoloEngine({
-        items:       activityList,
-        filters:     activeFilters,
-        vibeText:    "",
-        config:      plansConfig,
-        enricher:    enrichItems,
+        items: activityList,
+        filters: activeFilters,
+        vibeText: "",
+        config: plansConfig,
+        enricher: enrichItems,
         seenTracker,
       });
 
@@ -109,7 +109,7 @@ export default function PlansPage() {
 
       logPick({
         domain: DOMAIN,
-        mode:   "solo",
+        mode: "solo",
         filters: activeFilters,
         topPick,
         matchLabel: trustLabel,
@@ -124,11 +124,11 @@ export default function PlansPage() {
   const handleTryAgain = () => {
     if (isImplicitRejection(DOMAIN) && results[0]) {
       logRejection({
-        domain:       DOMAIN,
-        mode:         "solo",
-        filters:      { groupType, time, budget, location, vibe },
+        domain: DOMAIN,
+        mode: "solo",
+        filters: { groupType, time, budget, location, vibe },
         rejectedPick: results[0],
-        sessionId:    null,
+        sessionId: null,
       });
     }
     setResults([]);
@@ -139,29 +139,29 @@ export default function PlansPage() {
   // ── Styles ──
   const S = {
     pill: (active) => ({
-      background:   active ? "#e53935" : "#111",
-      border:       `1px solid ${active ? "#e53935" : "#222"}`,
+      background: active ? "#e53935" : "#111",
+      border: `1px solid ${active ? "#e53935" : "#222"}`,
       borderRadius: "20px",
-      padding:      "5px 14px",
-      fontSize:     "12px",
-      color:        active ? "#fff" : "#666",
-      cursor:       "pointer",
-      transition:   "all 0.15s",
-      whiteSpace:   "nowrap",
-      fontFamily:   "'DM Sans', system-ui, sans-serif",
+      padding: "5px 14px",
+      fontSize: "12px",
+      color: active ? "#fff" : "#666",
+      cursor: "pointer",
+      transition: "all 0.15s",
+      whiteSpace: "nowrap",
+      fontFamily: "'DM Sans', system-ui, sans-serif",
     }),
   };
 
   // ── Render ──
   return (
     <main style={{
-      minHeight:      "100vh",
-      background:     "#080808",
-      display:        "flex",
-      alignItems:     "flex-start",
+      minHeight: "100vh",
+      background: "#080808",
+      display: "flex",
+      alignItems: "flex-start",
       justifyContent: "center",
-      padding:        "48px 16px 24px",
-      fontFamily:     "'DM Sans', system-ui, sans-serif",
+      padding: "48px 16px 24px",
+      fontFamily: "'DM Sans', system-ui, sans-serif",
     }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Serif+Display&display=swap" rel="stylesheet" />
 
@@ -276,18 +276,18 @@ export default function PlansPage() {
           onClick={handlePick}
           disabled={loading || !appReady || !isActive}
           style={{
-            width:        "100%",
-            background:   isActive && appReady ? "#e53935" : "#111",
-            border:       "none",
+            width: "100%",
+            background: isActive && appReady ? "#e53935" : "#111",
+            border: "none",
             borderRadius: "12px",
-            padding:      "13px",
-            fontSize:     "14px",
-            fontWeight:   500,
-            color:        isActive && appReady ? "#fff" : "#333",
-            cursor:       isActive && appReady ? "pointer" : "default",
+            padding: "13px",
+            fontSize: "14px",
+            fontWeight: 500,
+            color: isActive && appReady ? "#fff" : "#333",
+            cursor: isActive && appReady ? "pointer" : "default",
             marginBottom: "20px",
-            transition:   "all 0.2s",
-            fontFamily:   "'DM Sans', system-ui, sans-serif",
+            transition: "all 0.2s",
+            fontFamily: "'DM Sans', system-ui, sans-serif",
           }}
         >
           {loading ? `🗺️ ${message}` : "Find a plan"}
