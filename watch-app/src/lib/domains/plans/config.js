@@ -61,6 +61,7 @@ export const WEIGHTS = {
   // Quality boost
   popularity: 1,  // high popularityScore
   novelty:    1,  // high noveltyScore (surprise factor)
+  timeOfDay:  2,  // time of day match
 
   // Penalty
   conflict:   3,  // group conflict penalty per mismatched participant
@@ -83,6 +84,7 @@ export const HARD_FILTER_RULES = {
   budget:    true,
   location:  true, // hard — Indoor means Indoor, Outdoor means Outdoor, Any passes both
   vibe:      false, // soft — optional filter, scoring only
+  timeOfDay: false, // soft — scoring only, never blocks
 };
 
 // ─── Trust label thresholds ───────────────────────────────────────────────────

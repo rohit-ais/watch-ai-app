@@ -1,11 +1,12 @@
 // ─── Plans Domain: Activity Catalog V3 ───────────────────────────────────────
-// 146 activities fully tagged for the Plans decision engine.
+// 145 activities fully tagged for the Plans decision engine.
 // India-focused — Tier 1 + Tier 2 cities.
 // Schema: id, name, category, location, kidsFriendly, budget, timeNeeded,
 //         energyLevel, groupTypes, vibes, cityType, weatherSafe,
-//         noveltyScore, effortScore, popularityScore
+//         noveltyScore, effortScore, popularityScore, timeOfDay
 //
 // timeNeeded values: "1-2hr" | "2-4hr" | "half-day" | "full-day"
+// timeOfDay values:  "morning" | "afternoon" | "evening" | "night"
 
 export const ACTIVITY_CATALOG = [
 
@@ -27,6 +28,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 2,
@@ -44,6 +46,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 1,
+    timeOfDay: ["evening", "night"],
   },
   {
     id: 3,
@@ -61,6 +64,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 4,
@@ -78,6 +82,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 5,
@@ -95,6 +100,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 1,
+    timeOfDay: ["evening", "night"],
   },
 
   // ─── CATEGORY 2: FOOD + CHILL ──────────────────────────────────────────────
@@ -115,6 +121,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 7,
@@ -132,6 +139,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["evening", "night"],
   },
   {
     id: 8,
@@ -149,6 +157,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 9,
@@ -166,6 +175,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["morning"],
   },
   {
     id: 10,
@@ -183,6 +193,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["afternoon"],
   },
   {
     id: 11,
@@ -200,6 +211,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 12,
@@ -217,6 +229,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["night"],
   },
   {
     id: 13,
@@ -234,6 +247,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 14,
@@ -251,6 +265,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["evening", "night"],
   },
   {
     id: 15,
@@ -268,6 +283,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 3,
     popularityScore: 2,
+    timeOfDay: ["evening", "night"],
   },
   {
     id: 16,
@@ -285,6 +301,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["afternoon", "evening"],
   },
   {
     id: 17,
@@ -302,6 +319,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 3,
+    timeOfDay: ["evening", "night"],
   },
   {
     id: 18,
@@ -319,6 +337,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 19,
@@ -336,6 +355,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["afternoon", "evening"],
   },
   {
     id: 20,
@@ -353,6 +373,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 101,
@@ -370,6 +391,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "evening", "night"],
   },
   {
     id: 102,
@@ -387,6 +409,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon"],
   },
 
   // ─── CATEGORY 3: FUN INDOOR ACTIVITIES ────────────────────────────────────
@@ -407,6 +430,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 22,
@@ -424,6 +448,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 23,
@@ -441,6 +466,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 24,
@@ -458,6 +484,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 25,
@@ -475,6 +502,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 26,
@@ -492,6 +520,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 27,
@@ -509,6 +538,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 28,
@@ -526,6 +556,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 29,
@@ -543,6 +574,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 30,
@@ -560,6 +592,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 32,
@@ -577,6 +610,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 33,
@@ -594,6 +628,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 35,
@@ -611,6 +646,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 36,
@@ -628,6 +664,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 37,
@@ -645,6 +682,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 38,
@@ -662,6 +700,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 103,
@@ -679,6 +718,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
 
   // ─── CATEGORY 4: FAMILY + KIDS ────────────────────────────────────────────
@@ -699,6 +739,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "night"],
   },
   {
     id: 42,
@@ -716,6 +757,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "night"],
   },
   {
     id: 43,
@@ -733,6 +775,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 2,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "night"],
   },
   {
     id: 44,
@@ -750,6 +793,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 45,
@@ -767,6 +811,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 46,
@@ -784,6 +829,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 3,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 47,
@@ -801,6 +847,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 3,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 48,
@@ -818,6 +865,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 49,
@@ -835,6 +883,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 50,
@@ -852,6 +901,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 51,
@@ -869,6 +919,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 52,
@@ -886,6 +937,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 1,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 53,
@@ -903,6 +955,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 1,
     popularityScore: 1,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 54,
@@ -920,6 +973,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 55,
@@ -937,6 +991,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 1,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 57,
@@ -954,6 +1009,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 1,
+    timeOfDay: ["evening", "night"],
   },
   {
     id: 58,
@@ -971,6 +1027,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["evening", "night"],
   },
   {
     id: 59,
@@ -988,6 +1045,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 60,
@@ -1005,6 +1063,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 104,
@@ -1022,6 +1081,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
 
   // ─── CATEGORY 5: COUPLE EXPERIENCES ──────────────────────────────────────
@@ -1042,6 +1102,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["evening"],
   },
   {
     id: 62,
@@ -1059,6 +1120,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["afternoon", "evening"],
   },
   {
     id: 63,
@@ -1076,6 +1138,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 64,
@@ -1093,6 +1156,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 65,
@@ -1110,6 +1174,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 66,
@@ -1127,6 +1192,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 1,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 67,
@@ -1144,6 +1210,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 3,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 68,
@@ -1161,6 +1228,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 1,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 69,
@@ -1178,6 +1246,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["evening"],
   },
   {
     id: 70,
@@ -1195,6 +1264,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 71,
@@ -1212,6 +1282,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 3,
     popularityScore: 2,
+    timeOfDay: ["evening", "night"],
   },
   {
     id: 72,
@@ -1229,6 +1300,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 73,
@@ -1246,6 +1318,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 1,
+    timeOfDay: ["night"],
   },
   {
     id: 74,
@@ -1263,6 +1336,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 75,
@@ -1280,6 +1354,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 3,
+    timeOfDay: ["evening", "night"],
   },
 
   // ─── CATEGORY 6: FRIENDS / GROUP OUTINGS ──────────────────────────────────
@@ -1300,6 +1375,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 77,
@@ -1317,6 +1393,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 3,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 78,
@@ -1334,6 +1411,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 3,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 79,
@@ -1351,6 +1429,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 3,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 80,
@@ -1368,6 +1447,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 81,
@@ -1385,6 +1465,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["evening", "night"],
   },
   {
     id: 82,
@@ -1402,6 +1483,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 3,
+    timeOfDay: ["evening", "night"],
   },
   {
     id: 83,
@@ -1419,6 +1501,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 3,
     popularityScore: 2,
+    timeOfDay: ["evening", "night"],
   },
   {
     id: 84,
@@ -1436,6 +1519,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 85,
@@ -1453,6 +1537,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 1,
+    timeOfDay: ["evening", "night"],
   },
   {
     id: 86,
@@ -1470,6 +1555,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 87,
@@ -1487,6 +1573,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 88,
@@ -1504,6 +1591,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["night"],
   },
   {
     id: 89,
@@ -1521,6 +1609,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 1,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 90,
@@ -1538,6 +1627,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["afternoon", "evening"],
   },
   {
     id: 105,
@@ -1555,6 +1645,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 106,
@@ -1572,6 +1663,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 107,
@@ -1589,6 +1681,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon"],
   },
 
   // ─── CATEGORY 7: RELAX / LOW-EFFORT ──────────────────────────────────────
@@ -1609,6 +1702,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 92,
@@ -1626,6 +1720,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 93,
@@ -1643,6 +1738,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 1,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 94,
@@ -1660,6 +1756,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["afternoon", "evening"],
   },
   {
     id: 95,
@@ -1677,6 +1774,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 96,
@@ -1694,23 +1792,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
-  },
-  {
-    id: 97,
-    name: "Beachside Relax",
-    category: "relax",
-    location: "outdoor",
-    kidsFriendly: true,
-    budget: "low",
-    timeNeeded: "half-day",
-    energyLevel: "low",
-    groupTypes: ["couple", "friends", "family"],
-    vibes: ["relax", "adventure"],
-    cityType: "metro-tier2",
-    weatherSafe: false,
-    noveltyScore: 2,
-    effortScore: 2,
-    popularityScore: 3,
+    timeOfDay: ["morning", "evening", "night"],
   },
   {
     id: 98,
@@ -1728,6 +1810,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 99,
@@ -1745,6 +1828,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 1,
+    timeOfDay: ["evening", "night"],
   },
   {
     id: 100,
@@ -1762,6 +1846,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 108,
@@ -1779,6 +1864,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 109,
@@ -1796,6 +1882,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 110,
@@ -1813,6 +1900,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 1,
+    timeOfDay: ["night"],
   },
   {
     id: 111,
@@ -1830,6 +1918,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
 
   // ─── CATEGORY 8: PREMIUM / SPECIAL ───────────────────────────────────────
@@ -1850,6 +1939,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 3,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 113,
@@ -1867,6 +1957,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 3,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 114,
@@ -1884,6 +1975,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 3,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 115,
@@ -1901,6 +1993,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 116,
@@ -1918,6 +2011,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 117,
@@ -1935,6 +2029,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 118,
@@ -1952,7 +2047,9 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon"],
   },
+
   // ─── CATEGORY 9: INDOOR GAMES + HOME ACTIVITIES ───────────────────────────
 
   {
@@ -1971,6 +2068,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 120,
@@ -1988,6 +2086,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 121,
@@ -2005,6 +2104,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 122,
@@ -2022,6 +2122,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 123,
@@ -2039,6 +2140,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 124,
@@ -2056,6 +2158,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 125,
@@ -2073,6 +2176,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 126,
@@ -2090,6 +2194,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 127,
@@ -2107,6 +2212,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 128,
@@ -2124,6 +2230,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["evening", "night"],
   },
   {
     id: 129,
@@ -2141,6 +2248,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 130,
@@ -2158,6 +2266,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 1,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 131,
@@ -2175,6 +2284,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 132,
@@ -2192,6 +2302,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 133,
@@ -2209,6 +2320,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening", "night"],
   },
   {
     id: 134,
@@ -2226,6 +2338,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["evening", "night"],
   },
   {
     id: 135,
@@ -2243,6 +2356,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 136,
@@ -2260,6 +2374,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["morning", "afternoon"],
   },
   {
     id: 137,
@@ -2277,6 +2392,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 1,
+    timeOfDay: ["morning", "afternoon", "evening"],
   },
   {
     id: 138,
@@ -2294,6 +2410,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 3,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 139,
@@ -2311,6 +2428,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 1,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 140,
@@ -2328,6 +2446,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["evening", "night"],
   },
   {
     id: 141,
@@ -2345,6 +2464,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 2,
     popularityScore: 2,
+    timeOfDay: ["evening", "night"],
   },
   {
     id: 142,
@@ -2362,6 +2482,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 3,
     effortScore: 2,
     popularityScore: 1,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 143,
@@ -2379,6 +2500,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 3,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 144,
@@ -2396,6 +2518,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 145,
@@ -2413,6 +2536,7 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["afternoon", "evening", "night"],
   },
   {
     id: 146,
@@ -2430,5 +2554,6 @@ export const ACTIVITY_CATALOG = [
     noveltyScore: 2,
     effortScore: 1,
     popularityScore: 2,
+    timeOfDay: ["evening", "night"],
   },
 ];

@@ -62,6 +62,14 @@ export default function PlansPage() {
   const isActive = groupType && time && budget && location && city;
 
   // ── Engine ──
+  const getTimeOfDay = () => {
+    const hour = new Date().getHours();
+    if (hour >= 6 && hour < 12) return "morning";
+    if (hour >= 12 && hour < 17) return "afternoon";
+    if (hour >= 17 && hour < 21) return "evening";
+    return "night";
+  };
+
   const handlePick = () => {
     if (!isActive) return;
     setLoading(true);
@@ -75,6 +83,7 @@ export default function PlansPage() {
         budget: budget.toLowerCase(),
         location: location.toLowerCase(),
         vibe: vibe ? vibe.toLowerCase().replace("+", "-") : "",
+        timeOfDay: getTimeOfDay(),
       };
 
       const result = await runSoloEngine({

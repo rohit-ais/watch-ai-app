@@ -48,6 +48,13 @@ export function preScore(item, activeFilters, weights, moodGenreMap) {
     }
   }
 
+  // Time of day match — Plans domain
+  if (activeFilters.timeOfDay && item.timeOfDay) {
+    if (item.timeOfDay.includes(activeFilters.timeOfDay)) {
+      score += weights.timeOfDay || 0;
+    }
+  }
+
   return score;
 }
 
@@ -115,6 +122,13 @@ export function fullScore(item, activeFilters, weights, moodGenreMap, qualityThr
     }
   }
 
+  // Time of day match — Plans domain
+  if (activeFilters.timeOfDay && item.timeOfDay) {
+    if (item.timeOfDay.includes(activeFilters.timeOfDay)) {
+      score += weights.timeOfDay || 0;
+    }
+  }
+
   // ── Quality boost (silent — never overrides intent) ──
 
   if (qualityThresholds) {
@@ -159,6 +173,7 @@ export function calcMaxPossible(activeFilters, weights) {
   if (activeFilters.groupType) max += weights.groupType || 0;
   if (activeFilters.budget)    max += weights.budget || 0;
   if (activeFilters.location && activeFilters.location !== "any") max += weights.location || 0;
+  if (activeFilters.timeOfDay) max += weights.timeOfDay || 0;
   // Quality boosts not counted — trust label based on intent match only
   return max;
 }

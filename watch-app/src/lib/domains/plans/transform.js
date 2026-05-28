@@ -74,6 +74,7 @@ export function transformActivity(item, selectedCity = null) {
     effortScore:    item.effortScore,
     weatherSafe:    item.weatherSafe,
     category:       item.category,
+    timeOfDay:      item.timeOfDay || [],
   };
 }
 
