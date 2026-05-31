@@ -9,9 +9,59 @@ import { logPick, logRejection } from "../../lib/engine/logger";
 
 const CITY_STORAGE_KEY = "plans-city";
 
+function ActionLink({ item, city, time }) {
+  if (!item || !item.actionType) return null;
+
+  let href = "";
+  let label = "";
+  let external = true;
+
+  if (item.actionType === "maps" && item.mapQuery) {
+    let q = encodeURIComponent(item.mapQuery + " in " + city);
+    href = "https://maps.google.com/?q=" + q;
+    label = "Find spots in " + city + " \u2192";
+    external = true;
+  } else if (item.actionType === "rules") {
+    let q = encodeURIComponent("how to play " + item.name);
+    href = "https://www.google.com/search?q=" + q;
+    label = "How to play \u2192";
+    external = true;
+  } else if (item.actionType === "watch") {
+    let timeMap = { "1-2hr": "1hr", "2-4hr": "2hr%2B", "half-day": "2hr%2B" };
+    let mappedTime = (time && timeMap[time.toLowerCase()]) ? timeMap[time.toLowerCase()] : "";
+    let query = mappedTime ? "?type=movie&time=" + mappedTime : "?type=movie";
+    href = "/watch" + query;
+    label = "Decide what to watch \u2192";
+    external = false;
+  } else {
+    return null;
+  }
+
+  if (!href) return null;
+
+  const linkProps = {
+    href: href,
+    target: external ? "_blank" : "_self",
+    rel: external ? "noreferrer" : "",
+    style: {
+      display: "inline-block",
+      marginTop: "10px",
+      fontSize: "11px",
+      color: "#888",
+      textDecoration: "none",
+      fontFamily: "'DM Sans', system-ui, sans-serif",
+      background: "#141414",
+      border: "1px solid #2a4a6a",
+      borderRadius: "20px",
+      padding: "3px 10px",
+    }
+  };
+
+  return <a {...linkProps}>{label}</a>;
+}
+
 export default function PlansPage() {
 
-  // ── Filters ──
   const [groupType, setGroupType] = useState("");
   const [time, setTime] = useState("");
   const [budget, setBudget] = useState("");
@@ -20,25 +70,21 @@ export default function PlansPage() {
   const [city, setCity] = useState("");
   const [showCityPicker, setShowCityPicker] = useState(false);
 
-  // ── Engine ──
   const [activityList, setActivityList] = useState([]);
   const [appReady, setAppReady] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  // ── Results ──
   const [results, setResults] = useState([]);
   const [noResults, setNoResults] = useState(false);
   const [wasReset, setWasReset] = useState(false);
 
-  // ── Seen tracker ──
   const seenTrackerRef = useRef(null);
   if (!seenTrackerRef.current) {
-    seenTrackerRef.current = createSeenTracker(`${DOMAIN}-solo`);
+    seenTrackerRef.current = createSeenTracker(DOMAIN + "-solo");
   }
   const seenTracker = seenTrackerRef.current;
 
-  // ── Init ──
   useEffect(() => {
     const stored = localStorage.getItem(CITY_STORAGE_KEY);
     if (stored) setCity(stored);
@@ -51,17 +97,14 @@ export default function PlansPage() {
     setAppReady(true);
   }, [city]);
 
-  // ── City select ──
   const handleCitySelect = (c) => {
     setCity(c);
     localStorage.setItem(CITY_STORAGE_KEY, c);
     setShowCityPicker(false);
   };
 
-  // ── Filter active check ──
   const isActive = groupType && time && budget && location && city;
 
-  // ── Engine ──
   const getTimeOfDay = () => {
     const hour = new Date().getHours();
     if (hour >= 6 && hour < 12) return "morning";
@@ -145,23 +188,19 @@ export default function PlansPage() {
     setWasReset(false);
   };
 
-  // ── Styles ──
-  const S = {
-    pill: (active) => ({
-      background: active ? "#e53935" : "#111",
-      border: `1px solid ${active ? "#e53935" : "#222"}`,
-      borderRadius: "20px",
-      padding: "5px 14px",
-      fontSize: "12px",
-      color: active ? "#fff" : "#666",
-      cursor: "pointer",
-      transition: "all 0.15s",
-      whiteSpace: "nowrap",
-      fontFamily: "'DM Sans', system-ui, sans-serif",
-    }),
-  };
+  const pill = (active) => ({
+    background: active ? "#e53935" : "#111",
+    border: "1px solid " + (active ? "#e53935" : "#222"),
+    borderRadius: "20px",
+    padding: "5px 14px",
+    fontSize: "12px",
+    color: active ? "#fff" : "#666",
+    cursor: "pointer",
+    transition: "all 0.15s",
+    whiteSpace: "nowrap",
+    fontFamily: "'DM Sans', system-ui, sans-serif",
+  });
 
-  // ── Render ──
   return (
     <main style={{
       minHeight: "100vh",
@@ -176,7 +215,6 @@ export default function PlansPage() {
 
       <div style={{ width: "100%", maxWidth: "360px" }}>
 
-        {/* ── Back ── */}
         <button
           onClick={() => window.location.href = "/"}
           style={{ background: "none", border: "none", color: "#333", cursor: "pointer", fontSize: "12px", padding: 0, marginBottom: "24px", fontFamily: "'DM Sans', system-ui, sans-serif" }}
@@ -184,7 +222,6 @@ export default function PlansPage() {
           ← Back
         </button>
 
-        {/* ── Header ── */}
         <div style={{ marginBottom: "28px" }}>
           <p style={{ fontSize: "10px", color: "#333", letterSpacing: "0.12em", textTransform: "uppercase", margin: "0 0 5px" }}>
             Decision Engine
@@ -193,7 +230,6 @@ export default function PlansPage() {
             What to do<span style={{ color: "#e53935" }}>?</span>
           </h1>
 
-          {/* ── City chip ── */}
           {city ? (
             <button
               onClick={() => setShowCityPicker(true)}
@@ -211,76 +247,68 @@ export default function PlansPage() {
           )}
         </div>
 
-        {/* ── City Picker ── */}
         {showCityPicker && (
           <div style={{ background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: "14px", padding: "14px", marginBottom: "16px" }}>
             <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 10px" }}>Select City</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
               {CITIES.map((c) => (
-                <button key={c} onClick={() => handleCitySelect(c)} style={S.pill(city === c)}>{c}</button>
+                <button key={c} onClick={() => handleCitySelect(c)} style={pill(city === c)}>{c}</button>
               ))}
             </div>
           </div>
         )}
 
-        {/* ── Filters ── */}
         <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "20px" }}>
 
-          {/* Group Type */}
           <div>
             <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 8px" }}>Who's going?</p>
             <div style={{ display: "flex", gap: "6px" }}>
               {GROUP_TYPES.map((g) => (
-                <button key={g} onClick={() => setGroupType(groupType === g ? "" : g)} style={S.pill(groupType === g)}>{g}</button>
+                <button key={g} onClick={() => setGroupType(groupType === g ? "" : g)} style={pill(groupType === g)}>{g}</button>
               ))}
             </div>
           </div>
 
-          {/* Time */}
           <div>
             <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 8px" }}>Time available</p>
             <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
               {TIME_OPTIONS.map((t) => (
-                <button key={t} onClick={() => setTime(time === t ? "" : t)} style={S.pill(time === t)}>{t}</button>
+                <button key={t} onClick={() => setTime(time === t ? "" : t)} style={pill(time === t)}>{t}</button>
               ))}
             </div>
           </div>
 
-          {/* Budget */}
           <div>
             <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 8px" }}>Budget</p>
             <div style={{ display: "flex", gap: "6px" }}>
               {BUDGET_OPTIONS.map((b) => (
-                <button key={b} onClick={() => setBudget(budget === b ? "" : b)} style={S.pill(budget === b)}>{b}</button>
+                <button key={b} onClick={() => setBudget(budget === b ? "" : b)} style={pill(budget === b)}>{b}</button>
               ))}
             </div>
           </div>
 
-          {/* Location */}
           <div>
             <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 8px" }}>Indoor or outdoor?</p>
             <div style={{ display: "flex", gap: "6px" }}>
               {LOCATION_OPTIONS.map((l) => (
-                <button key={l} onClick={() => setLocation(location === l ? "" : l)} style={S.pill(location === l)}>{l}</button>
+                <button key={l} onClick={() => setLocation(location === l ? "" : l)} style={pill(location === l)}>{l}</button>
               ))}
             </div>
           </div>
 
-          {/* Vibe — optional */}
           <div>
             <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 8px" }}>
               Vibe <span style={{ color: "#222", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>— optional</span>
             </p>
             <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px", scrollbarWidth: "none" }}>
               {VIBES.map((v) => (
-                <button key={v} onClick={() => setVibe(vibe === v ? "" : v)} style={{ ...S.pill(vibe === v), flexShrink: 0 }}>{v}</button>
+                <button key={v} onClick={() => setVibe(vibe === v ? "" : v)} style={{ ...pill(vibe === v), flexShrink: 0 }}>{v}</button>
               ))}
             </div>
           </div>
 
         </div>
 
-        {/* ── Pick Button ── */}
         <button
           onClick={handlePick}
           disabled={loading || !appReady || !isActive}
@@ -299,7 +327,7 @@ export default function PlansPage() {
             fontFamily: "'DM Sans', system-ui, sans-serif",
           }}
         >
-          {loading ? `🗺️ ${message}` : "Find a plan"}
+          {loading ? "Finding the right plan..." : "Find a plan"}
         </button>
 
         {!city && (
@@ -308,7 +336,6 @@ export default function PlansPage() {
           </p>
         )}
 
-        {/* ── Empty state ── */}
         {noResults && (
           <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: "16px", padding: "20px 14px", marginBottom: "12px", textAlign: "center" }}>
             <p style={{ fontSize: "20px", margin: "0 0 8px" }}>🗺️</p>
@@ -323,7 +350,6 @@ export default function PlansPage() {
           </div>
         )}
 
-        {/* ── Results ── */}
         {results.length > 0 && (
           <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: "16px", padding: "14px", marginBottom: "12px" }}>
             {wasReset && (
@@ -333,7 +359,6 @@ export default function PlansPage() {
             )}
             <p style={{ fontSize: "9px", color: "#444", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 10px" }}>Your Top Plan</p>
 
-            {/* Top pick */}
             <div style={{ marginBottom: "10px" }}>
               <p style={{ fontSize: "18px", fontWeight: 500, color: "#fff", margin: "0 0 6px", lineHeight: 1.3, fontFamily: "'DM Serif Display', serif" }}>
                 {results[0].name}
@@ -343,18 +368,20 @@ export default function PlansPage() {
               </span>
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "8px" }}>
                 {[
-                  results[0].location && `${results[0].location.charAt(0).toUpperCase() + results[0].location.slice(1)}`,
+                  results[0].location && (results[0].location.charAt(0).toUpperCase() + results[0].location.slice(1)),
                   results[0].time,
-                  results[0].budget && `${results[0].budget.charAt(0).toUpperCase() + results[0].budget.slice(1)} budget`,
+                  results[0].budget && (results[0].budget.charAt(0).toUpperCase() + results[0].budget.slice(1) + " budget"),
                 ].filter(Boolean).map((tag, i) => (
                   <span key={i} style={{ fontSize: "10px", background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: "20px", padding: "2px 8px", color: "#555" }}>
                     {tag}
                   </span>
                 ))}
               </div>
+
+              <ActionLink item={results[0]} city={city} time={time} />
+
             </div>
 
-            {/* Backup */}
             {results.length > 1 && (
               <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #1a1a1a" }}>
                 <p style={{ fontSize: "9px", color: "#333", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 6px" }}>You may also like</p>
@@ -378,7 +405,6 @@ export default function PlansPage() {
           </div>
         )}
 
-        {/* ── Decide Together — Coming Soon ── */}
         <div style={{ borderTop: "1px solid #141414", paddingTop: "16px" }}>
           <div style={{
             background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: "14px",

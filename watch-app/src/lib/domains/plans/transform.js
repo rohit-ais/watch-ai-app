@@ -75,6 +75,8 @@ export function transformActivity(item, selectedCity = null) {
     weatherSafe:    item.weatherSafe,
     category:       item.category,
     timeOfDay:      item.timeOfDay || [],
+    actionType:     item.actionType ?? null,   // ← add
+    mapQuery:       item.mapQuery ?? null,      // ← add
   };
 }
 
