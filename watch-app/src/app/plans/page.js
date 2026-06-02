@@ -405,30 +405,37 @@ export default function PlansPage() {
           </div>
         )}
 
-        <div style={{ borderTop: "1px solid #141414", paddingTop: "16px" }}>
-          <div style={{
-            background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: "14px",
-            padding: "13px 14px", display: "flex", alignItems: "center", justifyContent: "space-between",
-            opacity: 0.4, cursor: "default",
-          }}>
+        <div style={{ borderTop: "1px solid #141414", paddingTop: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+          <button
+            onClick={() => window.location.href = "/plans/group"}
+            style={{
+              background: "#0d1a0d", border: "1px solid #1e3a1e", borderRadius: "14px",
+              padding: "13px 14px", display: "flex", alignItems: "center", justifyContent: "space-between",
+              cursor: "pointer", width: "100%", textAlign: "left", position: "relative", overflow: "hidden",
+            }}
+          >
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "1px", background: "linear-gradient(90deg,transparent,#4caf50,transparent)" }} />
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div style={{ width: "32px", height: "32px", background: "#111", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ width: "32px", height: "32px", background: "#0d2a0d", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
-                  <circle cx="5" cy="7" r="2.5" stroke="#555" strokeWidth="1.5" />
-                  <circle cx="11" cy="7" r="2.5" stroke="#555" strokeWidth="1.5" />
-                  <path d="M1 13c0-2 1.8-3.5 4-3.5" stroke="#555" strokeWidth="1.5" strokeLinecap="round" />
-                  <path d="M15 13c0-2-1.8-3.5-4-3.5" stroke="#555" strokeWidth="1.5" strokeLinecap="round" />
+                  <circle cx="5" cy="7" r="2.5" stroke="#4caf50" strokeWidth="1.5" />
+                  <circle cx="11" cy="7" r="2.5" stroke="#4caf50" strokeWidth="1.5" />
+                  <path d="M1 13c0-2 1.8-3.5 4-3.5" stroke="#4caf50" strokeWidth="1.5" strokeLinecap="round" />
+                  <path d="M15 13c0-2-1.8-3.5-4-3.5" stroke="#4caf50" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
               </div>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <p style={{ fontSize: "13px", fontWeight: 500, color: "#555", margin: 0 }}>Decide together</p>
-                  <span style={{ fontSize: "9px", background: "#1a1a1a", color: "#444", border: "1px solid #222", borderRadius: "4px", padding: "1px 5px" }}>Soon</span>
+                  <p style={{ fontSize: "13px", fontWeight: 500, color: "#fff", margin: 0 }}>Decide together</p>
+                  <span style={{ fontSize: "9px", background: "#1a3a1a", color: "#4caf50", border: "1px solid #2a4a2a", borderRadius: "4px", padding: "1px 5px" }}>New</span>
                 </div>
-                <p style={{ fontSize: "10px", color: "#333", margin: 0 }}>Group plans — coming soon</p>
+                <p style={{ fontSize: "10px", color: "#4a6a4a", margin: 0 }}>Create a group session</p>
               </div>
             </div>
-          </div>
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+              <path d="M5 3l4 4-4 4" stroke="#4caf50" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </button>
         </div>
 
       </div>
