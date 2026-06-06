@@ -369,7 +369,7 @@ export default function GroupRoom({ params }) {
               <input
                 autoFocus
                 value={joinName}
-                onChange={(e) => setJoinName(e.target.value)}
+                onChange={(e) => setJoinName(e.target.value.slice(0, 30))}
                 onKeyDown={(e) => e.key === "Enter" && handleJoin()}
                 placeholder="Your name..."
                 style={{ width: "100%", background: "none", border: "none", outline: "none", color: "#fff", fontSize: "13px", caretColor: "#4caf50", fontFamily: "'DM Sans',system-ui,sans-serif" }}
