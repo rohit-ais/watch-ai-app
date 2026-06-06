@@ -214,8 +214,6 @@ export default function PlansGroupRoom({ params }) {
     const result = await runGroupEngine({
       items: currentList,
       participants: votesWithGroupType,
-      items: currentList,
-      participants: votes,
       filterKeys: FILTER_KEYS,
       config: plansConfig,
       enricher: enrichItems,

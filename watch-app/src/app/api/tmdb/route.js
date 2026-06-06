@@ -2,12 +2,30 @@
 // Server-side proxy for all TMDb API calls.
 // TMDB_API_KEY never exposed to client — lives in .env.local only.
 
+const ALLOWED_TMDB_PATHS = [
+  /^\/movie\/popular$/,
+  /^\/movie\/top_rated$/,
+  /^\/tv\/popular$/,
+  /^\/tv\/top_rated$/,
+  /^\/trending\/all\/week$/,
+  /^\/discover\/movie$/,
+  /^\/discover\/tv$/,
+  /^\/movie\/\d+$/,
+  /^\/tv\/\d+$/,
+  /^\/movie\/\d+\/watch\/providers$/,
+  /^\/tv\/\d+\/watch\/providers$/,
+];
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const path = searchParams.get("path");
-
   if (!path) {
     return Response.json({ error: "Missing path" }, { status: 400 });
+  }
+
+  const allowed = ALLOWED_TMDB_PATHS.some((pattern) => pattern.test(path));
+  if (!allowed) {
+    return Response.json({ error: "Path not allowed" }, { status: 403 });
   }
 
   const apiKey = process.env.TMDB_API_KEY;
