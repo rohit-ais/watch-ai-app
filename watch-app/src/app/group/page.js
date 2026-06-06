@@ -6,48 +6,30 @@ export default function GroupPage() {
   const [loading, setLoading] = useState(false);
   const [kidsMode, setKidsMode] = useState(false);
   const [error, setError] = useState("");
-  const [retryIn, setRetryIn] = useState(0);
 
-const handleCreate = async () => {
-  const lastCreated = localStorage.getItem("watch-last-room-created");
-  const elapsed = lastCreated ? Date.now() - parseInt(lastCreated) : Infinity;
-  
-  if (elapsed < 60000) {
-    const remaining = Math.ceil((60000 - elapsed) / 1000);
-    setRetryIn(remaining);
-    setError(`Please wait ${remaining}s before creating another room.`);
-    
-    const interval = setInterval(() => {
-      const newElapsed = Date.now() - parseInt(localStorage.getItem("watch-last-room-created"));
-      const newRemaining = Math.ceil((60000 - newElapsed) / 1000);
-      if (newRemaining <= 0) {
-        clearInterval(interval);
-        setError("");
-        setRetryIn(0);
-      } else {
-        setError(`Please wait ${newRemaining}s before creating another room.`);
+  const handleCreate = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/create-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: "entertainment", kids_mode: kidsMode }),
+      });
+      const data = await res.json();
+      if (res.status === 429) {
+        setError(`Please wait ${data.retryAfter}s before creating another room.`);
+        setLoading(false);
+        return;
       }
-    }, 1000);
-    return;
-  }
-
-  setLoading(true);
-  setError("");
-  try {
-    const { data: session, error: sErr } = await supabase
-      .from("sessions")
-      .insert({ mode: "group", status: "waiting", kids_mode: kidsMode })
-      .select()
-      .single();
-    if (sErr) throw sErr;
-    localStorage.setItem("watch-last-room-created", Date.now().toString());
-    window.location.href = `/group/${session.id}`;
-  } catch (err) {
-    console.error(err);
-    setError("Something went wrong. Please try again.");
-    setLoading(false);
-  }
-};
+      if (!res.ok) throw new Error(data.error || "unknown");
+      window.location.href = `/group/${data.sessionId}`;
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong. Please try again.");
+      setLoading(false);
+    }
+  };
 
   return (
     <main style={{ minHeight: "100vh", background: "#080808", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 16px", fontFamily: "'DM Sans', system-ui, sans-serif" }}>

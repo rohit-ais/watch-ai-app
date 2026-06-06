@@ -27,43 +27,22 @@ export default function PlansGroupPage() {
   });
 
   const handleCreate = async () => {
-    const lastCreated = localStorage.getItem(RATE_LIMIT_KEY);
-    const elapsed = lastCreated ? Date.now() - parseInt(lastCreated) : Infinity;
-
-    if (elapsed < 60000) {
-      const remaining = Math.ceil((60000 - elapsed) / 1000);
-      setError("Please wait " + remaining + "s before creating another room.");
-      const interval = setInterval(() => {
-        const newElapsed = Date.now() - parseInt(localStorage.getItem(RATE_LIMIT_KEY));
-        const newRemaining = Math.ceil((60000 - newElapsed) / 1000);
-        if (newRemaining <= 0) {
-          clearInterval(interval);
-          setError("");
-        } else {
-          setError("Please wait " + newRemaining + "s before creating another room.");
-        }
-      }, 1000);
-      return;
-    }
-
     setLoading(true);
     setError("");
     try {
-      const { data: session, error: sErr } = await supabase
-        .from("sessions")
-        .insert({
-          mode: "group",
-          status: "waiting",
-          domain: "plans",
-          city: city,
-          group_type: groupType.toLowerCase(),
-          kids_mode: false,
-        })
-        .select()
-        .single();
-      if (sErr) throw sErr;
-      localStorage.setItem(RATE_LIMIT_KEY, Date.now().toString());
-      window.location.href = "/plans/group/" + session.id;
+      const res = await fetch("/api/create-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: "plans", city, group_type: groupType }),
+      });
+      const data = await res.json();
+      if (res.status === 429) {
+        setError(`Please wait ${data.retryAfter}s before creating another room.`);
+        setLoading(false);
+        return;
+      }
+      if (!res.ok) throw new Error(data.error || "unknown");
+      window.location.href = `/plans/group/${data.sessionId}`;
     } catch (err) {
       console.error(err);
       setError("Something went wrong. Please try again.");
